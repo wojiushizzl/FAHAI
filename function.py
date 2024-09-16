@@ -216,6 +216,16 @@ def create_yaml(project_name):
     with open(file_path, "w", encoding="utf-8") as file:
         yaml.dump(lines, file)
 
+def find_weights(project_name,trian_name):
+    weights_path = os.path.join(os.getcwd(), 'projects', project_name, 'train', trian_name,'weights')
+    if os.path.exists(weights_path):
+        items = os.listdir(weights_path)
+        weights_list = [item for item in items if os.path.isfile(os.path.join(weights_path, item))]
+    else:
+        weights_list = []
+
+    print(weights_list)
+    return weights_list
 
 def delete_train(project, train_name):
     folder_path = os.path.join(os.getcwd(), 'projects', project, 'train', train_name)

@@ -61,8 +61,8 @@ class FAHAI:
             # height=50,
             width=200
         )
-        self.start_button = ft.ElevatedButton("START", on_click=self.start_camera)
-        self.stop_button = ft.ElevatedButton("STOP", on_click=self.stop_camera)
+        self.start_button = ft.ElevatedButton("START", icon=ft.icons.PLAY_ARROW_ROUNDED, on_click=self.start_camera)
+        self.stop_button = ft.ElevatedButton("STOP", icon=ft.icons.STOP_ROUNDED, on_click=self.stop_camera)
         self.take_photo_button = ft.ElevatedButton('Take Photo', icon=ft.icons.CAMERA, bgcolor='green',
                                                    on_click=self.take_photo)
         self.predict_on = ft.Switch(label='Load YOLO', label_position=ft.LabelPosition.LEFT)
@@ -87,13 +87,14 @@ class FAHAI:
         # components for train_page
         self.train_settings_text = ft.Text("Train settings")
 
-        self.train_settings_history = ft.Dropdown(on_change=self.update_result_table)
+        self.train_settings_history = ft.Dropdown(on_change=self.update_result_table,expand=True)
         self.train_settings_resume = ft.TextButton("Resume Train", on_click=self.resume_train, expand=True,
-                                                       disabled=True)
-        self.train_settings_delete = ft.TextButton("Delete", icon=ft.icons.DELETE,on_click=self.delete_train, expand=True,icon_color='red',
-                                                       disabled=False)
+                                                   disabled=True)
+        self.train_settings_delete = ft.TextButton("Delete", icon=ft.icons.DELETE, on_click=self.delete_train,
+                                                   expand=True, icon_color='red',
+                                                   disabled=False)
 
-        self.train_settings_exist_ok = ft.Switch(label='Exist OK', label_position=ft.LabelPosition.LEFT,value=True,
+        self.train_settings_exist_ok = ft.Switch(label='Exist OK', label_position=ft.LabelPosition.LEFT, value=True,
                                                  tooltip="-如果为 True，则允许覆盖现有的项目/名称目录。这对迭代实验非常有用，无需手动清除之前的输出-")
         self.train_settings_single_cls = ft.Switch(label='Single Class', label_position=ft.LabelPosition.LEFT,
                                                    tooltip="-在训练过程中将多类数据集中的所有类别视为单一类别。适用于二元分类任务，或侧重于对象的存在而非分类-")
@@ -127,52 +128,79 @@ class FAHAI:
         self.train_settings_mixup = ft.Slider(label='Mixup', min=0, max=1, divisions=10, value=0.0, expand=True,
                                               tooltip='float 0.0 - 1.0  混合两幅图像及其标签，创建合成图像。通过引入标签噪声和视觉变化，增强模型的泛化能力')
         self.train_settings_copy_paste = ft.Slider(label='Copy Paste', min=0, max=1, divisions=10, value=0.0,
-                                                   expand=True, tooltip='float 0.0 - 1.0  从一幅图像中复制物体并粘贴到另一幅图像上，用于增加物体实例和学习物体遮挡')
+                                                   expand=True,
+                                                   tooltip='float 0.0 - 1.0  从一幅图像中复制物体并粘贴到另一幅图像上，用于增加物体实例和学习物体遮挡')
         self.train_settings_start_button = ft.ElevatedButton("Start Train", on_click=self.start_train, expand=True)
         self.train_settings_progress_ring = ft.ProgressBar(height=10, visible=False, expand=True)
 
         # 添加components 用于显示训练过程后台的日志进度
-        self.train_progress_bar = ft.ProgressBar(visible=False,height=5)
+        self.train_progress_bar = ft.ProgressBar(visible=False, height=5,expand=True)
         self.train_result_table = ft.Markdown(
             selectable=True,
             extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
             on_tap_link=lambda e: self.page.launch_url(e.data),
         )
 
-        # datasets_page
-        self.datasets_page = ft.Row(
-            [ft.Container(
-                ft.Column(
-                    [
-                        self.images_card,
-                        self.labels_card,
-                        self.classfile_card,
-                        ft.Container(self.upload_zip_button, expand=1),
-                        ft.Container(ft.Row([self.label_studio_button, self.datasets_page_labelstudio_ring]), expand=1),
-                        ft.Column(ref=self.files, visible=False)
-                    ]), expand=2),
-                ft.Container(
-                    ft.Column([self.img_element, ], alignment=ft.MainAxisAlignment.SPACE_AROUND,
-                              horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                    bgcolor=ft.colors.BLUE_50, expand=8),
-                ft.Container(
-                    ft.Column([
-                        ft.Row([self.start_button, self.stop_button], expand=True),
-                        ft.Row([self.datasets_page_porgress_ring, self.text_element], expand=True),
-                        ft.Row([self.predict_on], expand=True),
-                        ft.Row([self.camera_dropdown], expand=True),
-                        ft.Row([self.frame_width_input, ft.Text("x", width=20), self.frame_height_input], expand=True),
-                        ft.Row([self.take_photo_button], expand=True),
-                    ], alignment=ft.MainAxisAlignment.SPACE_AROUND),
-                    bgcolor=ft.colors.BLUE_50, expand=2),
-            ]
+        # components for validate_page
+        self.validate_settings_text = ft.Text("Validate settings")
+
+        self.validate_settings_history = ft.Dropdown(on_change=self.find_weights,expand=True)
+        self.validate_settings_delete = ft.TextButton("Delete", icon=ft.icons.DELETE, on_click=self.delete_train,
+                                                      expand=True, icon_color='red',
+                                                      disabled=False)
+        self.validate_settings_weight = ft.Dropdown(expand=True)
+        self.validate_img_element = ft.Image(src="./component/bosch-company-equipment-logo-wallpaper.jpg",
+                                             fit=ft.ImageFit.COVER,
+                                             expand=True)
+        self.validate_camera_dropdown = ft.Dropdown(
+            label="select CAM",
+            options=[ft.dropdown.Option(str(i)) for i in range(5)], value="0",
+            # height=50,
+            width=200,expand=True
         )
+        self.validate_weight_manual_select = ft.TextButton("Import",icon=ft.icons.DRIVE_FOLDER_UPLOAD, on_click=self.manual_find_weights, expand=True)
+        self.validate_frame_width_input = ft.TextField(label='width', value="640", width=80,expand=True)
+        self.validate_frame_height_input = ft.TextField(label='height', value="480", width=80,expand=True)
+        self.validate_settings_start_button = ft.ElevatedButton("Start Validate", icon=ft.icons.PLAY_ARROW_ROUNDED,
+                                                                on_click=self.start_validate_camera,expand=True)
+        self.validate_settings_stop_button = ft.ElevatedButton("Stop Validate", icon=ft.icons.STOP_ROUNDED,
+                                                               on_click=self.stop_validate_camera,expand=True)
+        self.validate_settings_upload_button = ft.ElevatedButton("Upload image for predict",icon=ft.icons.UPLOAD, on_click=self.upload_img_predict,expand=True)
+        self.validate_results = ft.Markdown(expand=True)
+        self.validate_results_text= ft.Text('Results',expand=True)
+        # datasets_page
+        self.datasets_page = ft.Row([ft.Container(
+            ft.Column(
+                [
+                    self.images_card,
+                    self.labels_card,
+                    self.classfile_card,
+                    ft.Container(self.upload_zip_button, expand=1),
+                    ft.Container(ft.Row([self.label_studio_button, self.datasets_page_labelstudio_ring]), expand=1),
+                    ft.Column(ref=self.files, visible=False)
+                ]), expand=2),
+            ft.Container(
+                ft.Column([self.img_element, ], alignment=ft.MainAxisAlignment.SPACE_AROUND,
+                          horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                bgcolor=ft.colors.BLUE_50, expand=8),
+            ft.Container(
+                ft.Column([
+                    ft.Row([self.start_button, self.stop_button], expand=True),
+                    ft.Row([self.datasets_page_porgress_ring, self.text_element], expand=True),
+                    ft.Row([self.predict_on], expand=True),
+                    ft.Row([self.camera_dropdown], expand=True),
+                    ft.Row([self.frame_width_input, ft.Text("x", width=20), self.frame_height_input], expand=True),
+                    ft.Row([self.take_photo_button], expand=True),
+                ], alignment=ft.MainAxisAlignment.SPACE_AROUND),
+                bgcolor=ft.colors.BLUE_50, expand=2),
+        ])
 
         # train_page
         self.train_page = ft.Row([
             ft.Container(ft.Column([
                 ft.Row([ft.Text(''), self.train_settings_text]),
-                ft.Row([ft.Text('history', width=80), self.train_settings_history, self.train_settings_resume, self.train_settings_delete]),
+                ft.Row([ft.Text('history', width=80), self.train_settings_history, self.train_settings_resume,
+                        self.train_settings_delete]),
                 ft.Row([ft.Text('new train', width=80), self.train_settings_train_name]),
                 ft.Row([ft.Text('exist ok', width=80), self.train_settings_exist_ok]),
                 ft.Row([ft.Text('single cls', width=80), self.train_settings_single_cls]),
@@ -192,17 +220,43 @@ class FAHAI:
                 ft.Row([self.train_settings_start_button]),
                 ft.Row([self.train_settings_progress_ring])
 
-            ]), expand=3),
+            ],scroll=ft.ScrollMode.ALWAYS), expand=3),
             ft.Container(ft.Column([
                 ft.Text('Train Progress'),
                 self.train_progress_bar,
-                ft.Column([self.train_result_table,],scroll=ft.ScrollMode.ALWAYS,expand=1)
+                ft.Column([self.train_result_table, ], scroll=ft.ScrollMode.ALWAYS, expand=1)
 
             ]), expand=7),
         ])
 
         # validate_page
-        self.validate_page = ft.Container(self.selected_project_text)
+        self.validate_page = ft.Row([
+            ft.Container(
+                ft.Column([
+                    ft.Card(
+                        ft.Column([
+                            self.validate_settings_text,
+                            ft.Row([ft.Text('history', width=80), self.validate_settings_history,
+                                    self.validate_settings_delete]),
+                            ft.Row([ft.Text('weight', width=80), self.validate_settings_weight,self.validate_weight_manual_select]),
+                            ft.Row([ft.Text('select CAM', width=80), self.validate_camera_dropdown]),
+                            ft.Row([ft.Text('imgsz', width=80), self.validate_frame_width_input, ft.Text('X'),
+                                    self.validate_frame_height_input]), ])),
+                    ft.Card(
+                        ft.Column([
+                            ft.Row([self.validate_settings_start_button, self.validate_settings_stop_button]),
+                            ft.Row([self.validate_settings_upload_button]),
+                        ])),
+                    ft.Card(
+                        ft.Column([
+                            ft.Row([  self.validate_results_text]),
+                            ft.Row([self.validate_results,])
+
+                        ]),expand=True)
+                ])
+                , expand=2),
+            ft.Container(ft.Column([self.validate_img_element]), expand=7),
+        ])
 
         # tabs
         self.t = ft.Tabs(selected_index=0, animation_duration=300, on_change=self.update_datasets_card, tabs=[
@@ -253,13 +307,38 @@ class FAHAI:
         )
         self.page.update()
 
-    def delete_train(self, e):
-        project=self.selected_project
-        train_name=self.train_settings_history.value
+    def manual_find_weights(self, e):
+        self.snack_message('Manual Import, this function is not ready', 'red')
+
+    def start_validate_camera(self, e):
+        self.snack_message('Start Validate Camera, this function is not ready', 'red')
+
+    def stop_validate_camera(self, e):
+        self.snack_message('Stop Validate Camera, this function is not ready', 'red')
+
+    def upload_img_predict(self, e):
+        self.snack_message('Upload Image, this function is not ready', 'red')
+
+    def find_weights(self, e):
+        project = self.selected_project
+        train_name = self.validate_settings_history.value
         if project is None or train_name is None:
             return
         try:
-            messagge=function.delete_train(project,train_name)
+            weights = function.find_weights(project, train_name)
+            self.validate_settings_weight.options = [ft.dropdown.Option(weight) for weight in weights]
+            self.validate_settings_weight.value = weights[0]
+            self.validate_settings_weight.update()
+        except Exception as e:
+            self.snack_message(f"Error finding weights for {train_name}: {e}", 'red')
+
+    def delete_train(self, e):
+        project = self.selected_project
+        train_name = self.train_settings_history.value
+        if project is None or train_name is None:
+            return
+        try:
+            messagge = function.delete_train(project, train_name)
             self.snack_message(messagge, 'green')
             self.update_result_table(e)
             self.find_train_history(self.selected_project)
@@ -267,11 +346,9 @@ class FAHAI:
         except Exception as e:
             self.snack_message(f"Error deleting train {train_name}: {e}", 'red')
 
-
-
     def update_result_table(self, e):
-        project=self.selected_project
-        train_name=self.train_settings_history.value
+        project = self.selected_project
+        train_name = self.train_settings_history.value
         if project is None or train_name is None:
             return
         try:
@@ -286,18 +363,15 @@ class FAHAI:
 
         except FileNotFoundError:
             self.train_result_table.value = "文件 result.csv 未找到"
-            self.train_progress_bar.value =0
+            self.train_progress_bar.value = 0
 
         self.train_progress_bar.visible = True
         self.train_progress_bar.color = 'green' if self.train_progress_bar.value >= 1 else 'red'
         self.train_progress_bar.update()
         self.train_result_table.update()
 
-
     def resume_train(self, e):
         self.snack_message('Resume Train, this function is not ready', 'red')
-
-
 
     def update_train_progress(self, e):
         while self.train_settings_progress_ring.visible == True:
@@ -381,7 +455,7 @@ class FAHAI:
                 copy_paste=copy_paste
             )
         else:
-            self.snack_message("current only support Detect & Segment task",color='red')
+            self.snack_message("current only support Detect & Segment task", color='red')
         self.train_settings_progress_ring.visible = False
         self.page.update()
 
@@ -600,6 +674,7 @@ class FAHAI:
     def find_train_history(self, project):
         selected_project = project
         self.train_settings_history.options.clear()
+        self.validate_settings_history.options.clear()
         train_folder = os.path.join(os.getcwd(), 'projects', selected_project, 'train')
         if not os.path.exists(train_folder):
             return
@@ -608,6 +683,7 @@ class FAHAI:
             for dir in dirs:
                 if dir != 'weights':
                     self.train_settings_history.options.append(ft.dropdown.Option(dir))
+                    self.validate_settings_history.options.append(ft.dropdown.Option(dir))
 
         self.page.update()
 
