@@ -26,6 +26,7 @@ class FAHAI:
         self.files = ft.Ref[ft.Column]()
         self.target_directory = None
         self.cap = None
+        self.model_path = None
         self.setup_ui()
 
     def setup_ui(self):
@@ -148,7 +149,7 @@ class FAHAI:
         self.validate_settings_delete = ft.TextButton("Delete", icon=ft.icons.DELETE, on_click=self.delete_train,
                                                       expand=True, icon_color='red',
                                                       disabled=False)
-        self.validate_settings_weight = ft.Dropdown(expand=True)
+        self.validate_settings_weight = ft.Dropdown(expand=True,on_change=self.find_weight_path)
         self.validate_img_element = ft.Image(src="./component/bosch-company-equipment-logo-wallpaper.jpg",
                                              fit=ft.ImageFit.COVER,
                                              expand=True)
@@ -158,7 +159,7 @@ class FAHAI:
             # height=50,
             width=200,expand=True
         )
-        self.validate_weight_manual_select = ft.TextButton("Import",icon=ft.icons.DRIVE_FOLDER_UPLOAD, on_click=self.manual_find_weights, expand=True)
+        self.validate_weight_manual_select = ft.TextButton("Import",icon=ft.icons.DRIVE_FOLDER_UPLOAD, on_click=self.find_weight_path, expand=True)
         self.validate_frame_width_input = ft.TextField(label='width', value="640", width=80,expand=True)
         self.validate_frame_height_input = ft.TextField(label='height', value="480", width=80,expand=True)
         self.validate_settings_start_button = ft.ElevatedButton("Start Validate", icon=ft.icons.PLAY_ARROW_ROUNDED,
@@ -168,6 +169,8 @@ class FAHAI:
         self.validate_settings_upload_button = ft.ElevatedButton("Upload image for predict",icon=ft.icons.UPLOAD, on_click=self.upload_img_predict,expand=True)
         self.validate_results = ft.Markdown(expand=True)
         self.validate_results_text= ft.Text('Results',expand=True)
+        self.validate_model_path = ft.Text(self.model_path,expand=True)
+
         # datasets_page
         self.datasets_page = ft.Row([ft.Container(
             ft.Column(
@@ -239,6 +242,7 @@ class FAHAI:
                             ft.Row([ft.Text('history', width=80), self.validate_settings_history,
                                     self.validate_settings_delete]),
                             ft.Row([ft.Text('weight', width=80), self.validate_settings_weight,self.validate_weight_manual_select]),
+                            ft.Row([self.validate_model_path]),
                             ft.Row([ft.Text('select CAM', width=80), self.validate_camera_dropdown]),
                             ft.Row([ft.Text('imgsz', width=80), self.validate_frame_width_input, ft.Text('X'),
                                     self.validate_frame_height_input]), ])),
@@ -307,14 +311,33 @@ class FAHAI:
         )
         self.page.update()
 
-    def manual_find_weights(self, e):
-        self.snack_message('Manual Import, this function is not ready', 'red')
+    def find_weight_path(self, e):
+        how_get_model_path =e.data
+        print(how_get_model_path)
+        self.snack_message(how_get_model_path, 'green')
+
+        self.model_path = os.path.join(os.getcwd(), 'projects', self.selected_project, 'train', self.validate_settings_history.value, 'weights',self.validate_settings_weight.value)
+        self.validate_model_path.value = self.model_path
+        self.validate_model_path.update()
 
     def start_validate_camera(self, e):
-        self.snack_message('Start Validate Camera, this function is not ready', 'red')
-
+        camera_index = int(self.validate_camera_dropdown.value)
+        model_path = self.model_path
+        predict_on = True
+        if self.camera_thread_instance and self.camera_thread_instance.is_alive():
+            self.snack_message('CAM is working now', 'red')
+            self.page.update()
+            return
+        self.camera_thread_instance = threading.Thread(target=self.camera_thread, args=(camera_index, self.validate_img_element,predict_on,model_path))
+        self.camera_thread_instance.do_run = True
+        self.camera_thread_instance.start()
     def stop_validate_camera(self, e):
-        self.snack_message('Stop Validate Camera, this function is not ready', 'red')
+        if self.camera_thread_instance:
+            self.camera_thread_instance.do_run = False
+            self.camera_thread_instance.join()
+            self.snack_message('CAM is stopped', 'green')
+            self.validate_img_element.src_base64 = ""
+            self.page.update()
 
     def upload_img_predict(self, e):
         self.snack_message('Upload Image, this function is not ready', 'red')
@@ -327,8 +350,9 @@ class FAHAI:
         try:
             weights = function.find_weights(project, train_name)
             self.validate_settings_weight.options = [ft.dropdown.Option(weight) for weight in weights]
-            self.validate_settings_weight.value = weights[0]
+            # self.validate_settings_weight.value = weights[0]
             self.validate_settings_weight.update()
+
         except Exception as e:
             self.snack_message(f"Error finding weights for {train_name}: {e}", 'red')
 
@@ -590,19 +614,20 @@ class FAHAI:
         except Exception as e:
             self.snack_message(f' {e}', 'red')
 
-    def load_model(self, YOLO):
-        current_directory = os.getcwd()
-        seg_filepath = os.path.join(current_directory, 'pre_model', 'yolov8n.pt')
-        model = YOLO(seg_filepath)
+    def load_model(self, YOLO,model_path):
+        if model_path ==None:
+            model_path = os.path.join(os.getcwd(), 'pre_model', 'yolov8n.pt')
+        print(model_path)
+        model = YOLO(model_path)
         return model
 
-    def camera_thread(self, camera_index, predict_on=False):
+    def camera_thread(self, camera_index,img_element, predict_on=False,model_path=None):
         if predict_on:
             self.datasets_page_porgress_ring.visible = True
             self.text_element.value = "Loading model... "
             self.page.update()
             from ultralytics import YOLO
-            model = self.load_model(YOLO)
+            model = self.load_model(YOLO,model_path)
             self.text_element.value = "Load model success"
             self.datasets_page_porgress_ring.visible = False
             self.page.update()
@@ -637,7 +662,7 @@ class FAHAI:
             img_pil.save(img_byte_arr, format="JPEG")
             img_byte_arr = img_byte_arr.getvalue()
             img_base64 = base64.b64encode(img_byte_arr).decode('utf-8')
-            self.img_element.src_base64 = img_base64
+            img_element.src_base64 = img_base64
             self.page.update()
             time.sleep(0.03)
         self.cap.release()
@@ -649,7 +674,7 @@ class FAHAI:
             self.text_element.value = "摄像头已经在运行"
             self.page.update()
             return
-        self.camera_thread_instance = threading.Thread(target=self.camera_thread, args=(camera_index, predict_on))
+        self.camera_thread_instance = threading.Thread(target=self.camera_thread, args=(camera_index, self.img_element,predict_on))
         self.camera_thread_instance.do_run = True
         self.camera_thread_instance.start()
 
