@@ -37,7 +37,7 @@ def find_file(directory, filename='classes.txt'):
     return False
 
 
-### Develop page tab1 dataset functions
+
 def get_project_folders():
     projects_path = os.path.join(os.getcwd(), 'projects')
     if os.path.exists(projects_path):
@@ -61,29 +61,6 @@ def get_folder_info(folder_path):
             tree_structure.append(f"{subindent}{f}")
     return create_time, modify_time, tree_structure
 
-
-def update_folder_imfo(selected_folder, window):
-    if selected_folder:
-        folder_path = os.path.join(os.getcwd(), 'projects', selected_folder)
-        create_time, modify_time, tree_structure = get_folder_info(folder_path)
-        # 更新显示的文件夹信息
-        window['-CREATE TIME-'].update(create_time)
-        window['-MODIFY TIME-'].update(modify_time)
-        window['-FOLDER TREE-'].update("\n".join(tree_structure))
-        task_type = selected_folder.split("_", 1)[1]
-        try:
-            train_folder_path = os.path.join(folder_path, 'train')
-            items = os.listdir(train_folder_path)
-            train_list = [item for item in items if os.path.isdir(os.path.join(train_folder_path, item))]
-        except:
-            train_list = []
-    else:
-        window['-CREATE TIME-'].update(None)
-        window['-MODIFY TIME-'].update(None)
-        window['-FOLDER TREE-'].update(None)
-        task_type = None
-        train_list = []
-    return task_type, train_list
 
 
 # 删除文件或者文件夹路径，如果是文件夹则保留文件夹，删除文件夹下所有文件
@@ -140,11 +117,6 @@ def delete_project(selected_folder):
     message = f"项目 '{selected_folder}' 已经删除。"
     return message
 
-
-def run_label_studio(window):
-    window['-GIF IMAGE-'].update(visible=True)
-    subprocess.run(["label-studio"])
-    window['-GIF IMAGE-'].update(visible=False)
 
 
 def get_all_classes(project_name):
@@ -240,69 +212,3 @@ def delete_train(project, train_name):
         message = (f"文件夹 '{folder_path}' 不存在")
     return message
 
-def stop_python_file():
-    print("停止训练...")
-
-
-def get_seg_args_list(values, exist_ok, single_cls):
-    if exist_ok:
-        e = str(exist_ok)
-    else:
-        e = ''
-    if single_cls:
-        s = str(single_cls)
-    else:
-        s = ''
-    args_list = [
-        str(values['-train name-']),
-        str(values['-SELECTED FOLDER-']),
-        str(values['-epochs-']),
-        str(values['-batch-']),
-        str(values['-patience-']),
-        e,
-        s,
-        str(values['-image size-'])
-    ]  # 收集参数
-    return args_list
-
-
-def get_det_args_list(values, exist_ok, single_cls):
-    if exist_ok:
-        e = str(exist_ok)
-    else:
-        e = ''
-    if single_cls:
-        s = str(single_cls)
-    else:
-        s = ''
-    args_list = [
-        str(values['-train name-']),
-        str(values['-SELECTED FOLDER-']),
-        str(values['-epochs-']),
-        str(values['-batch-']),
-        str(values['-patience-']),
-        e,
-        s,
-        str(values['-image size-']),
-
-        str(values['-degrees-']),
-        str(values['-translate-']),
-        str(values['-scale-']),
-        str(values['-flipud-']),
-        str(values['-fliplr-']),
-        # str(values['-erasing-']),
-        str(values['-mosaic-']),
-        str(values['-mixup-']),
-        str(values['-copy_paste-'])
-
-    ]  # 收集参数
-    # print(args_list)
-    return args_list
-
-
-def get_weights_list(train_path):
-    try:
-        items = os.listdir(train_path)
-        return items
-    except:
-        return []

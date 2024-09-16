@@ -12,7 +12,6 @@ import shutil
 from typing import Dict
 import yolov8_train
 import pandas as pd
-import json
 
 
 class FAHAI:
@@ -89,7 +88,7 @@ class FAHAI:
         # components for train_page
         self.train_settings_text = ft.Text("Train settings")
 
-        self.train_settings_history = ft.Dropdown(on_change=self.update_result_table,expand=True)
+        self.train_settings_history = ft.Dropdown(on_change=self.update_result_table, expand=True)
         self.train_settings_resume = ft.TextButton("Resume Train", on_click=self.resume_train, expand=True,
                                                    disabled=True)
         self.train_settings_delete = ft.TextButton("Delete", icon=ft.icons.DELETE, on_click=self.delete_train,
@@ -149,11 +148,11 @@ class FAHAI:
         # components for validate_page
         self.validate_settings_text = ft.Text("Validate settings")
 
-        self.validate_settings_history = ft.Dropdown(on_change=self.find_weights,expand=True)
+        self.validate_settings_history = ft.Dropdown(on_change=self.find_weights, expand=True)
         self.validate_settings_delete = ft.TextButton("Delete", icon=ft.icons.DELETE, on_click=self.delete_train,
                                                       expand=True, icon_color='red',
                                                       disabled=False)
-        self.validate_settings_weight = ft.Dropdown(expand=True,on_change=self.find_weight_path)
+        self.validate_settings_weight = ft.Dropdown(expand=True, on_change=self.find_weight_path)
         self.validate_img_element = ft.Image(src="./component/bosch-company-equipment-logo-wallpaper.jpg",
                                              fit=ft.ImageFit.COVER,
                                              expand=True)
@@ -161,31 +160,38 @@ class FAHAI:
             label="select CAM",
             options=[ft.dropdown.Option(str(i)) for i in range(5)], value="0",
             # height=50,
-            width=200,expand=True
+            width=200, expand=True
         )
-        self.validate_weight_manual_select = ft.TextButton("Import",icon=ft.icons.DRIVE_FOLDER_UPLOAD, on_click=lambda _: self.model_picker.pick_files(allow_multiple=False,allowed_extensions=['pt']), expand=True)
-        self.validate_frame_width_input = ft.TextField(label='width', value="640", width=80,expand=True)
-        self.validate_frame_height_input = ft.TextField(label='height', value="480", width=80,expand=True)
+        self.validate_weight_manual_select = ft.TextButton("Import", icon=ft.icons.DRIVE_FOLDER_UPLOAD,
+                                                           on_click=lambda _: self.model_picker.pick_files(
+                                                               allow_multiple=False, allowed_extensions=['pt']),
+                                                           expand=True)
+        self.validate_frame_width_input = ft.TextField(label='width', value="640", width=80, expand=True)
+        self.validate_frame_height_input = ft.TextField(label='height', value="480", width=80, expand=True)
         self.validate_settings_start_button = ft.ElevatedButton("Start Validate", icon=ft.icons.PLAY_ARROW_ROUNDED,
-                                                                on_click=self.start_validate_camera,expand=True)
+                                                                on_click=self.start_validate_camera, expand=True)
         self.validate_settings_stop_button = ft.ElevatedButton("Stop Validate", icon=ft.icons.STOP_ROUNDED,
-                                                               on_click=self.stop_validate_camera,expand=True)
-        self.validate_settings_upload_button = ft.ElevatedButton("Upload image for predict",icon=ft.icons.UPLOAD, on_click=lambda _: self.image_picker.pick_files(allow_multiple=False,allowed_extensions=['bmp','jpg','jpeg','png']),expand=True)
+                                                               on_click=self.stop_validate_camera, expand=True)
+        self.validate_settings_upload_button = ft.ElevatedButton("Upload image for predict", icon=ft.icons.UPLOAD,
+                                                                 on_click=lambda _: self.image_picker.pick_files(
+                                                                     allow_multiple=False,
+                                                                     allowed_extensions=['bmp', 'jpg', 'jpeg', 'png']),
+                                                                 expand=True)
         self.validate_results = ft.Markdown(
             selectable=True,
             extension_set="gitHubWeb",
             code_theme="atom-one-dark",
             code_style=ft.TextStyle(font_family="Roboto Mono"),
             expand=True)
-        self.validate_results_text= ft.Text('Results',expand=True)
-        self.validate_model_path = ft.Text(self.model_path,expand=True)
+        self.validate_results_text = ft.Text('Results', expand=True)
+        self.validate_model_path = ft.Text(self.model_path, expand=True)
         self.model_picker = ft.FilePicker(on_result=self.on_model_picked)
         self.page.overlay.append(self.model_picker)  # FilePicker 需要添加到 overlay
         self.image_picker = ft.FilePicker(on_result=self.upload_img_predict)
         self.page.overlay.append(self.image_picker)  # FilePicker 需要添加到 overlay
-        self.validate_progress_bar= ft.ProgressBar(visible=False, height=5,expand=True)
-        self.validate_settings_conf=ft.Slider(label='Confidence', min=0, max=1, divisions=10, value=0.3, expand=True)
-        self.validate_settings_iou=ft.Slider(label='IOU', min=0, max=1, divisions=10, value=0.5, expand=True)
+        self.validate_progress_bar = ft.ProgressBar(visible=False, height=5, expand=True)
+        self.validate_settings_conf = ft.Slider(label='Confidence', min=0, max=1, divisions=10, value=0.3, expand=True)
+        self.validate_settings_iou = ft.Slider(label='IOU', min=0, max=1, divisions=10, value=0.5, expand=True)
 
         # datasets_page
         self.datasets_page = ft.Row([ft.Container(
@@ -239,13 +245,13 @@ class FAHAI:
                 ft.Row([self.train_settings_start_button]),
                 ft.Row([self.train_settings_progress_ring])
 
-            ],scroll=ft.ScrollMode.ALWAYS), expand=3),
+            ], scroll=ft.ScrollMode.ALWAYS), expand=3),
             ft.Container(ft.Column([
                 ft.Text('Train Progress'),
                 self.train_progress_bar,
                 ft.Column([self.train_result_table, ], scroll=ft.ScrollMode.ALWAYS, expand=1)
 
-            ]),bgcolor=ft.colors.BLUE_50, expand=7),
+            ]), bgcolor=ft.colors.BLUE_50, expand=7),
         ])
 
         # validate_page
@@ -257,7 +263,8 @@ class FAHAI:
                             self.validate_settings_text,
                             ft.Row([ft.Text('history', width=80), self.validate_settings_history,
                                     self.validate_settings_delete]),
-                            ft.Row([ft.Text('weight', width=80), self.validate_settings_weight,self.validate_weight_manual_select]),
+                            ft.Row([ft.Text('weight', width=80), self.validate_settings_weight,
+                                    self.validate_weight_manual_select]),
                             ft.Row([self.validate_model_path]),
                             ft.Row([ft.Text('select CAM', width=80), self.validate_camera_dropdown]),
                             ft.Row([ft.Text('imgsz', width=80), self.validate_frame_width_input, ft.Text('X'),
@@ -273,14 +280,14 @@ class FAHAI:
                         ])),
                     ft.Card(
                         ft.Column([
-                            ft.Row([  self.validate_results_text]),
-                            ft.Row([self.validate_results,])
+                            ft.Row([self.validate_results_text]),
+                            ft.Row([self.validate_results, ])
 
-                        ],scroll=ft.ScrollMode.ALWAYS),expand=True)
-                ],scroll=ft.ScrollMode.ALWAYS)
+                        ], scroll=ft.ScrollMode.ALWAYS), expand=True)
+                ], scroll=ft.ScrollMode.ALWAYS)
                 , expand=2),
-            ft.Container(ft.Column([self.validate_img_element],alignment=ft.MainAxisAlignment.SPACE_AROUND,
-                          horizontal_alignment=ft.CrossAxisAlignment.CENTER), expand=7),
+            ft.Container(ft.Column([self.validate_img_element], alignment=ft.MainAxisAlignment.SPACE_AROUND,
+                                   horizontal_alignment=ft.CrossAxisAlignment.CENTER), expand=7),
         ])
 
         # tabs
@@ -324,7 +331,15 @@ class FAHAI:
                 "/",
                 [
                     ft.AppBar(
-                        title=ft.Text(f'Welcome to FAHAI develop tool ! project :[{self.selected_project}] selected '),
+                        title=ft.Text('Welcome to FAHAI develop tool !',
+                                      spans=[
+                                          ft.TextSpan(
+                                              f'            project :[{self.selected_project}] selected ',
+                                              ft.TextStyle(weight=ft.FontWeight.BOLD,
+                                                           color=ft.colors.INDIGO_800 if self.selected_project else ft.colors.RED_800),
+
+                                          ), ]),
+
                         bgcolor=ft.colors.SURFACE_VARIANT),
                     self.create_develop_content(),
                 ]
@@ -332,8 +347,7 @@ class FAHAI:
         )
         self.page.update()
 
-
-    def on_model_picked(self,e: ft.FilePickerResultEvent):
+    def on_model_picked(self, e: ft.FilePickerResultEvent):
         if e.files:
             # 将选择的文件路径显示在文本组件中
             self.model_path = e.files[0].path
@@ -341,7 +355,9 @@ class FAHAI:
             self.validate_model_path.update()
 
     def find_weight_path(self, e):
-        self.model_path = os.path.join(os.getcwd(), 'projects', self.selected_project, 'train', self.validate_settings_history.value, 'weights',self.validate_settings_weight.value)
+        self.model_path = os.path.join(os.getcwd(), 'projects', self.selected_project, 'train',
+                                       self.validate_settings_history.value, 'weights',
+                                       self.validate_settings_weight.value)
         self.validate_model_path.value = self.model_path
         self.validate_model_path.update()
 
@@ -357,7 +373,8 @@ class FAHAI:
             self.validate_progress_bar.visible = False
             self.validate_progress_bar.update()
             return
-        self.camera_thread_instance = threading.Thread(target=self.camera_thread, args=(camera_index, self.validate_img_element,predict_on,model_path))
+        self.camera_thread_instance = threading.Thread(target=self.camera_thread, args=(
+        camera_index, self.validate_img_element, predict_on, model_path))
         self.camera_thread_instance.do_run = True
         self.camera_thread_instance.start()
 
@@ -369,7 +386,7 @@ class FAHAI:
             self.validate_img_element.src_base64 = ""
             self.page.update()
 
-    def upload_img_predict(self,e: ft.FilePickerResultEvent):
+    def upload_img_predict(self, e: ft.FilePickerResultEvent):
         self.validate_progress_bar.visible = True
         self.validate_progress_bar.update()
         from ultralytics import YOLO
@@ -382,14 +399,14 @@ class FAHAI:
             return
         if e.files:
             img_path = e.files[0].path
-            conf=float(self.validate_settings_conf.value)
-            iou=float(self.validate_settings_iou.value)
+            conf = float(self.validate_settings_conf.value)
+            iou = float(self.validate_settings_iou.value)
             width = int(self.validate_frame_width_input.value)
             height = int(self.validate_frame_height_input.value)
             try:
-                res=model.predict(img_path,conf=conf,iou=iou,imgsz=(width,height))
+                res = model.predict(img_path, conf=conf, iou=iou, imgsz=(width, height))
 
-                res_json=res[0].tojson()
+                res_json = res[0].tojson()
                 print(type(res_json))
                 # formatted_json = json.dumps('```dart\n'+res_json+'\n```', indent=4,ensure_ascii=False)
                 markdown_text = f"```dart\n{res_json}\n```"
@@ -680,14 +697,14 @@ class FAHAI:
         except Exception as e:
             self.snack_message(f' {e}', 'red')
 
-    def load_model(self, YOLO,model_path):
-        if model_path ==None:
+    def load_model(self, YOLO, model_path):
+        if model_path == None:
             model_path = os.path.join(os.getcwd(), 'pre_model', 'yolov8n.pt')
         print(model_path)
         model = YOLO(model_path)
         return model
 
-    def camera_thread(self, camera_index,img_element, predict_on=False,model_path=None):
+    def camera_thread(self, camera_index, img_element, predict_on=False, model_path=None):
         if predict_on:
             self.datasets_page_porgress_ring.visible = True
             self.validate_progress_bar.visible = True
@@ -695,7 +712,7 @@ class FAHAI:
             self.text_element.value = "Loading model... "
             self.page.update()
             from ultralytics import YOLO
-            model = self.load_model(YOLO,model_path)
+            model = self.load_model(YOLO, model_path)
             self.text_element.value = "Load model success"
             self.datasets_page_porgress_ring.visible = False
             self.validate_progress_bar.visible = False
@@ -728,13 +745,13 @@ class FAHAI:
             if not ret:
                 break
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            conf=float(self.validate_settings_conf.value)
-            iou=float(self.validate_settings_iou.value)
+            conf = float(self.validate_settings_conf.value)
+            iou = float(self.validate_settings_iou.value)
             width = int(self.validate_frame_width_input.value)
             height = int(self.validate_frame_height_input.value)
 
             try:
-                res = model.predict(frame,conf=conf,iou=iou,imgsz=(width,height))
+                res = model.predict(frame, conf=conf, iou=iou, imgsz=(width, height))
                 res_plotted = res[0].plot()
             except:
                 res_plotted = frame
@@ -755,7 +772,8 @@ class FAHAI:
             self.text_element.value = "摄像头已经在运行"
             self.page.update()
             return
-        self.camera_thread_instance = threading.Thread(target=self.camera_thread, args=(camera_index, self.img_element,predict_on))
+        self.camera_thread_instance = threading.Thread(target=self.camera_thread,
+                                                       args=(camera_index, self.img_element, predict_on))
         self.camera_thread_instance.do_run = True
         self.camera_thread_instance.start()
 
@@ -863,7 +881,7 @@ class FAHAI:
 def main(page: ft.Page):
     page.title = "BOSCH_HzP_AI"
     page.padding = 0
-    page.theme = ft.theme.Theme(font_family="Verdana")
+    page.theme = ft.theme.Theme(font_family="Verdana", color_scheme_seed='blue')
     page.theme.page_transitions.windows = "cupertino"
 
     page.fonts = {
