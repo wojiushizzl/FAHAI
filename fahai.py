@@ -1,5 +1,4 @@
 import subprocess
-
 import flet as ft
 import function
 import os
@@ -11,7 +10,7 @@ from io import BytesIO
 from PIL import Image
 import shutil
 from typing import Dict
-
+import train
 
 class FAHAI:
     def __init__(self, page: ft.Page):
@@ -28,6 +27,7 @@ class FAHAI:
         self.setup_ui()
 
     def setup_ui(self):
+
         # components for projects_page
         self.selected_project_text = ft.Text(f"这是 {self.selected_project}")
         self.new_project_name = ft.TextField(label='Project Name', hint_text="Create a new project ?", expand=True)
@@ -52,15 +52,15 @@ class FAHAI:
         # components for datasets_page
         self.img_element = ft.Image(src="./component/bosch-company-equipment-logo-wallpaper.jpg", fit=ft.ImageFit.COVER,
                                     expand=True)
-        self.text_element = ft.Text("waiting...")
+        self.text_element = ft.Text("Press START to start camera")
         self.camera_dropdown = ft.Dropdown(
-            label="选择摄像头",
+            label="select CAM",
             options=[ft.dropdown.Option(str(i)) for i in range(5)], value="0",
             # height=50,
             width=200
         )
-        self.start_button = ft.ElevatedButton("开始", on_click=self.start_camera)
-        self.stop_button = ft.ElevatedButton("结束", on_click=self.stop_camera)
+        self.start_button = ft.ElevatedButton("START", on_click=self.start_camera)
+        self.stop_button = ft.ElevatedButton("STOP", on_click=self.stop_camera)
         self.take_photo_button = ft.ElevatedButton('Take Photo', icon=ft.icons.CAMERA, bgcolor='green',
                                                    on_click=self.take_photo)
         self.predict_on = ft.Switch(label='Load YOLO', label_position=ft.LabelPosition.LEFT)
@@ -79,8 +79,48 @@ class FAHAI:
         self.frame_width_input = ft.TextField(label='width', value="640", width=80)
         self.frame_height_input = ft.TextField(label='height', value="480", width=80)
         self.webview = ft.WebView(url="http://localhost:8088/projects/?page=1")
+        self.datasets_page_porgress_ring = ft.ProgressRing(width=20, height=20, visible=False)
+        self.datasets_page_labelstudio_ring = ft.ProgressRing(width=20, height=20, visible=False)
 
-        
+        # components for train_page
+        self.train_settings_text = ft.Text("Train settings")
+        self.train_settings_exist_ok = ft.Switch(label='Exist OK', label_position=ft.LabelPosition.LEFT,
+                                                 tooltip="-待录入-")
+        self.train_settings_single_cls = ft.Switch(label='Single Class', label_position=ft.LabelPosition.LEFT,
+                                                   tooltip="-待录入-")
+        self.train_settings_train_name = ft.TextField(label='Train Name', hint_text="Train Name", expand=True,value='train',
+                                                      tooltip="-待录入-")
+        self.train_settings_epochs = ft.TextField(label='Epochs', hint_text="Epochs", expand=True, value='50',tooltip="-待录入-")
+        self.train_settings_batch_size = ft.TextField(label='Batch Size', hint_text="Batch Size", value='2',expand=True,
+                                                      tooltip="-待录入-")
+        self.train_settings_img_size = ft.TextField(label='Image Size', hint_text="Image Size",value='640', expand=True,
+                                                    tooltip="-待录入-")
+        self.train_settings_patience = ft.Slider(label='Patience', min=0, max=100, divisions=10, value=50, expand=True,
+                                                 tooltip="-待录入-")
+        self.train_settings_degree = ft.Slider(label='Degree', min=0, max=360, divisions=10, value=20, expand=True,
+                                               tooltip="-待录入-")
+        self.train_settings_translate = ft.Slider(label='Translate', min=0, max=1, divisions=10, value=0.1, expand=True,
+                                                  tooltip="-待录入-")
+        self.train_settings_scale = ft.Slider(label='Scale', min=0, max=1, divisions=10, value=0.5, expand=True,
+                                              tooltip="-待录入-")
+        self.train_settings_flipud = ft.Slider(label='Flipud', min=0, max=1, divisions=10, value=0, expand=True,
+                                               tooltip="-待录入-")
+        self.train_settings_fliplr = ft.Slider(label='Fliplr', min=0, max=1, divisions=10, value=0.5, expand=True,
+                                               tooltip='Flip left right')
+        self.train_settings_erasing = ft.Slider(label='Erasing', min=0, max=1, divisions=10, value=0.3, expand=True,
+                                                tooltip='Erasing')
+        self.train_settings_mosaic = ft.Slider(label='Mosaic', min=0, max=1, divisions=10, value=1, expand=True,
+                                               tooltip='Mosaic')
+        self.train_settings_mixup = ft.Slider(label='Mixup', min=0, max=1, divisions=10, value=0.0, expand=True,
+                                              tooltip='Mixup')
+        self.train_settings_copy_paste = ft.Slider(label='Copy Paste', min=0, max=1, divisions=10, value=0.0,
+                                                   expand=True, tooltip='Copy Paste')
+        self.train_settings_start_button = ft.ElevatedButton("Start Train", on_click=self.start_train, expand=True)
+
+        # 添加components 用于显示训练过程后台的日志进度
+
+        self.train_settings_progress_ring = ft.ProgressBar(height=10, visible=False,expand=True)
+
         # datasets_page
         self.datasets_page = ft.Row(
             [ft.Container(
@@ -90,7 +130,7 @@ class FAHAI:
                         self.labels_card,
                         self.classfile_card,
                         ft.Container(self.upload_zip_button, expand=1),
-                        ft.Container(self.label_studio_button, expand=1),
+                        ft.Container(ft.Row([self.label_studio_button, self.datasets_page_labelstudio_ring]), expand=1),
                         ft.Column(ref=self.files, visible=False)
                     ]), expand=2),
                 ft.Container(
@@ -100,7 +140,7 @@ class FAHAI:
                 ft.Container(
                     ft.Column([
                         ft.Row([self.start_button, self.stop_button], expand=True),
-                        ft.Row([self.text_element], expand=True),
+                        ft.Row([self.datasets_page_porgress_ring, self.text_element], expand=True),
                         ft.Row([self.predict_on], expand=True),
                         ft.Row([self.camera_dropdown], expand=True),
                         ft.Row([self.frame_width_input, ft.Text("x", width=20), self.frame_height_input], expand=True),
@@ -109,8 +149,39 @@ class FAHAI:
                     bgcolor=ft.colors.BLUE_50, expand=2),
             ]
         )
+
         # train_page
-        self.train_page = ft.Container(self.selected_project_text)
+        self.train_page = ft.Row([
+            ft.Container(ft.Column([
+                ft.Row([ft.Text(''),self.train_settings_text]),
+                ft.Row([ft.Text('train name',width=80),self.train_settings_train_name]),
+                ft.Row([ft.Text('exist ok',width=80),self.train_settings_exist_ok]),
+                ft.Row([ft.Text('single cls',width=80),self.train_settings_single_cls]),
+                ft.Row([ft.Text('epochs',width=80),self.train_settings_epochs]),
+                ft.Row([ft.Text('batch size',width=80),self.train_settings_batch_size]),
+                ft.Row([ft.Text('img size',width=80),self.train_settings_img_size]),
+                ft.Row([ft.Text('patience',width=80),self.train_settings_patience]),
+                ft.Row([ft.Text('degree',width=80),self.train_settings_degree]),
+                ft.Row([ft.Text('translate',width=80),self.train_settings_translate]),
+                ft.Row([ft.Text('scale',width=80),self.train_settings_scale]),
+                ft.Row([ft.Text('flipud',width=80),self.train_settings_flipud]),
+                ft.Row([ft.Text('fliplr',width=80),self.train_settings_fliplr]),
+                ft.Row([ft.Text('erasing',width=80),self.train_settings_erasing]),
+                ft.Row([ft.Text('mosaic',width=80),self.train_settings_mosaic]),
+                ft.Row([ft.Text('mixup',width=80),self.train_settings_mixup]),
+                ft.Row([ft.Text('copy paste',width=80),self.train_settings_copy_paste]),
+                ft.Row([self.train_settings_start_button]),
+                ft.Row([self.train_settings_progress_ring])
+
+            ]), expand=3),
+            ft.Container(ft.Column([
+                ft.Text('训练日志'),
+                ft.Text('训练进度'),
+                ft.Text('训练结果'),
+                ft.Text('训练评估')
+
+            ]), expand=7),
+        ])
 
         # validate_page
         self.validate_page = ft.Container(self.selected_project_text)
@@ -140,11 +211,11 @@ class FAHAI:
                 icon=ft.icons.FACT_CHECK,
                 content=self.validate_page,
             ),
-            ft.Tab(
-                text='Label-studio',
-                icon=ft.icons.LABEL,
-                content=ft.Container(self.webview, expand=1)
-            )
+            # ft.Tab(
+            #     text='Label-studio',
+            #     icon=ft.icons.LABEL,
+            #     content=ft.Container(self.webview, expand=1)
+            # )
         ], expand=1)
 
         self.setup_page()
@@ -162,6 +233,68 @@ class FAHAI:
                 ]
             )
         )
+        self.page.update()
+
+    def start_train(self, e):
+        self.train_settings_progress_ring.visible = True
+        if self.selected_project is None:
+            self.train_settings_progress_ring.visible = False
+            self.snack_message('Please select a project first', 'red')
+            return
+        function.create_yaml(self.selected_project)
+        try:
+            function.update_yaml(self.selected_project)
+        except Exception as e:
+            self.train_settings_progress_ring.visible = False
+            self.snack_message(f"Error updating yaml: {e}", 'red')
+            return
+        self.snack_message('Train configure .yaml is ready, Start Train...', 'green')
+        train_thread = threading.Thread(target=self.train_thread)
+        train_thread.start()
+
+    def train_thread(self):
+        train_type=self.selected_project.split('_')[-1]
+        if train_type == "Detect":
+            train.det_train(
+                name=self.train_settings_train_name.value,
+                project_name=self.selected_project,
+                epochs=int(self.train_settings_epochs.value),
+                batch=int(self.train_settings_batch_size.value),
+                patience=int(self.train_settings_patience.value),
+                exist_ok=self.train_settings_exist_ok.value,
+                single_cls=self.train_settings_single_cls.value,
+                imgsz=int(self.train_settings_img_size.value),
+                degrees=float(self.train_settings_degree.value),
+                translate=float(self.train_settings_translate.value),
+                scale=float(self.train_settings_scale.value),
+                flipud=float(self.train_settings_flipud.value),
+                fliplr=float(self.train_settings_fliplr.value),
+                mosaic=float(self.train_settings_mosaic.value),
+                mixup=float(self.train_settings_mixup.value),
+                copy_paste=float(self.train_settings_copy_paste.value)
+            )
+        elif train_type == "Segment":
+            train.seg_train(
+                name=self.train_settings_train_name.value,
+                project_name=self.selected_project,
+                epochs=int(self.train_settings_epochs.value),
+                batch=int(self.train_settings_batch_size.value),
+                patience=int(self.train_settings_patience.value),
+                exist_ok=self.train_settings_exist_ok.value,
+                single_cls=self.train_settings_single_cls.value,
+                imgsz=int(self.train_settings_img_size.value),
+                degrees=float(self.train_settings_degree.value),
+                translate=float(self.train_settings_translate.value),
+                scale=float(self.train_settings_scale.value),
+                flipud=float(self.train_settings_flipud.value),
+                fliplr=float(self.train_settings_fliplr.value),
+                mosaic=float(self.train_settings_mosaic.value),
+                mixup=float(self.train_settings_mixup.value),
+                copy_paste=float(self.train_settings_copy_paste.value)
+            )
+        else:
+            self.snack_message("current only support Detect & Segment task")
+        self.train_settings_progress_ring.visible = False
         self.page.update()
 
     def create_develop_content(self):
@@ -212,8 +345,8 @@ class FAHAI:
     def open_label_studio(self, e):
         # 启动 Label Studio，指定端口
         port = 8088
-        conda_env = 'yolov8'
         # 构建命令字符串，激活conda环境并运行label-studio
+        self.datasets_page_labelstudio_ring.visible = True
         label_studio_thread = threading.Thread(target=self.label_studio, args=(port,))
         label_studio_thread.start()
 
@@ -221,14 +354,16 @@ class FAHAI:
         try:
             # "label-studio init test_project"   # 初始化项目
             # "label-studio start test_project --sampling sequential" # 启动项目
-            subprocess.run(['label-studio', 'start', '--port', str(port)], check=True) # 启动label studio
+            subprocess.run(['label-studio', 'start', '--port', str(port)], check=True)  # 启动label studio
 
             messagge = f'Load label Studio success at {port}'
             color = 'green'
         except subprocess.CalledProcessError as e:
+            self.datasets_page_labelstudio_ring.visible = False
             messagge = f"Error starting Label Studio: {e}"
             color = 'red'
         except FileNotFoundError:
+            self.datasets_page_labelstudio_ring.visible = False
             messagge = "Label Studio is not installed or not found in PATH."
             color = 'red'
         self.snack_message(messagge, color)
@@ -294,23 +429,29 @@ class FAHAI:
 
     def camera_thread(self, camera_index, predict_on=False):
         if predict_on:
+            self.datasets_page_porgress_ring.visible = True
             self.text_element.value = "Loading model... "
             self.page.update()
             from ultralytics import YOLO
             model = self.load_model(YOLO)
             self.text_element.value = "Load model success"
+            self.datasets_page_porgress_ring.visible = False
             self.page.update()
         self.text_element.value = "Loading CAM... "
+        self.datasets_page_porgress_ring.visible = True
+
         self.page.update()
 
         self.cap = cv2.VideoCapture(camera_index)
         if not self.cap.isOpened():
             self.text_element.value = "CAM start failed"
             self.snack_message("CAM start failed", 'red')
+            self.datasets_page_porgress_ring.visible = False
             self.page.update()
             return
         self.text_element.value = "CAM start success"
         self.snack_message("CAM start success", 'green')
+        self.datasets_page_porgress_ring.visible = False
         self.page.update()
         while getattr(threading.currentThread(), "do_run", True):
             ret, frame = self.cap.read()

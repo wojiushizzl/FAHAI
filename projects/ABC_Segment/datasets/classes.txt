@@ -1,1 +1,5 @@
-class1
+hs
+person
+car
+bus
+truck

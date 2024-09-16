@@ -144,14 +144,15 @@ def run_label_studio(window):
     window['-GIF IMAGE-'].update(visible=False)
 
 
-### Develop page tab2 train functions
 def get_all_classes(project_name):
-    classes_txt_path = os.path.join('projects', project_name, 'datasets', 'labels', 'classes.txt')
+    classes_txt_path = os.path.join(os.getcwd(),'projects', project_name, 'datasets', 'classes.txt')
+    # print(classes_txt_path)
     result_dict = {}
     if os.path.exists(classes_txt_path):
         with open(classes_txt_path, 'r') as file:
             lines = file.readlines()
             for i, line in enumerate(lines):
+                # print(line)
                 result_dict[i] = line.strip()
         return result_dict
     else:
@@ -175,7 +176,7 @@ def update_yaml(project_name):
             yaml.dump(lines, file)
         # print('yaml file updated')
     else:
-        print('分类文件不存在，请先上传classes.txt')
+        raise FileNotFoundError("classes.txt 文件不存在")
 
 
 def create_yaml(project_name):
