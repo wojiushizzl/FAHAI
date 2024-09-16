@@ -12,7 +12,6 @@ import shutil
 from typing import Dict
 import yolov8_train
 import pandas as pd
-import yaml
 
 
 class FAHAI:
