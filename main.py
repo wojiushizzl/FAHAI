@@ -52,8 +52,9 @@ class FAHAI:
             run_spacing=5,
         )
 
+        self.bg_img=os.path.join(os.getcwd(),'component','bosch-company-equipment-logo-wallpaper.jpg')
         # components for datasets_page
-        self.img_element = ft.Image(src="./component/bosch-company-equipment-logo-wallpaper.jpg", fit=ft.ImageFit.COVER,
+        self.img_element = ft.Image(src=self.bg_img, fit=ft.ImageFit.COVER,
                                     expand=True)
         self.text_element = ft.Text("Press START to start camera")
         self.camera_dropdown = ft.Dropdown(
@@ -62,8 +63,8 @@ class FAHAI:
             # height=50,
             width=200
         )
-        self.start_button = ft.ElevatedButton("START", icon=ft.icons.PLAY_ARROW_ROUNDED, on_click=self.start_camera)
-        self.stop_button = ft.ElevatedButton("STOP", icon=ft.icons.STOP_ROUNDED, on_click=self.stop_camera)
+        self.start_button = ft.ElevatedButton("START", icon=ft.icons.PLAY_ARROW_ROUNDED, on_click=self.start_camera,expand=True)
+        self.stop_button = ft.ElevatedButton("STOP", icon=ft.icons.STOP_ROUNDED, on_click=self.stop_camera,expand=True)
         self.take_photo_button = ft.ElevatedButton('Take Photo', icon=ft.icons.CAMERA, bgcolor='green',
                                                    on_click=self.take_photo)
         self.predict_on = ft.Switch(label='Load YOLO', label_position=ft.LabelPosition.LEFT)
@@ -79,8 +80,8 @@ class FAHAI:
                                         expand=3)
         self.classfile_card = ft.Container(
             self.dataset_card(ft.icons.DOCUMENT_SCANNER_OUTLINED, 'classes.txt', self.classfile_exist), expand=3)
-        self.frame_width_input = ft.TextField(label='width', value="640", width=80)
-        self.frame_height_input = ft.TextField(label='height', value="480", width=80)
+        self.frame_width_input = ft.TextField(label='width', value="640", width=80,expand=True)
+        self.frame_height_input = ft.TextField(label='height', value="480", width=80,expand=True)
         self.webview = ft.WebView(url="http://localhost:8088/projects/?page=1")
         self.datasets_page_porgress_ring = ft.ProgressRing(width=20, height=20, visible=False)
         self.datasets_page_labelstudio_ring = ft.ProgressRing(width=20, height=20, visible=False)
@@ -153,8 +154,8 @@ class FAHAI:
                                                       expand=True, icon_color='red',
                                                       disabled=False)
         self.validate_settings_weight = ft.Dropdown(expand=True, on_change=self.find_weight_path)
-        self.validate_img_element = ft.Image(src="./component/bosch-company-equipment-logo-wallpaper.jpg",
-                                             fit=ft.ImageFit.COVER,
+        self.validate_img_element = ft.Image(src=self.bg_img,
+                                             fit=ft.ImageFit.FILL,
                                              expand=True)
         self.validate_camera_dropdown = ft.Dropdown(
             label="select CAM",
@@ -207,7 +208,8 @@ class FAHAI:
             ft.Container(
                 ft.Column([self.img_element, ], alignment=ft.MainAxisAlignment.SPACE_AROUND,
                           horizontal_alignment=ft.CrossAxisAlignment.CENTER),
-                bgcolor=ft.colors.BLUE_50, expand=8),
+                # bgcolor=ft.colors.BLACK if self.page.theme_mode == ft.ThemeMode.DARK else ft.colors.BLUE_50,
+                expand=8),
             ft.Container(
                 ft.Column([
                     ft.Row([self.start_button, self.stop_button], expand=True),
@@ -217,7 +219,8 @@ class FAHAI:
                     ft.Row([self.frame_width_input, ft.Text("x", width=20), self.frame_height_input], expand=True),
                     ft.Row([self.take_photo_button], expand=True),
                 ], alignment=ft.MainAxisAlignment.SPACE_AROUND),
-                bgcolor=ft.colors.BLUE_50, expand=2),
+                # bgcolor=ft.colors.BLACK if self.page.theme_mode == ft.ThemeMode.DARK else ft.colors.BLUE_50,
+                expand=2),
         ])
 
         # train_page
@@ -245,13 +248,15 @@ class FAHAI:
                 ft.Row([self.train_settings_start_button]),
                 ft.Row([self.train_settings_progress_ring])
 
-            ], scroll=ft.ScrollMode.ALWAYS), expand=3),
+            ], scroll=ft.ScrollMode.ALWAYS,tight=False), padding=5,expand=3),
             ft.Container(ft.Column([
                 ft.Text('Train Progress'),
                 self.train_progress_bar,
                 ft.Column([self.train_result_table, ], scroll=ft.ScrollMode.ALWAYS, expand=1)
 
-            ]), bgcolor=ft.colors.BLUE_50, expand=7),
+            ]),
+                # bgcolor=ft.colors.BLUE_50,
+                expand=7),
         ])
 
         # validate_page
@@ -753,6 +758,11 @@ class FAHAI:
             try:
                 res = model.predict(frame, conf=conf, iou=iou, imgsz=(width, height))
                 res_plotted = res[0].plot()
+                res_json = res[0].tojson()
+                print(type(res_json))
+                # formatted_json = json.dumps('```dart\n'+res_json+'\n```', indent=4,ensure_ascii=False)
+                markdown_text = f"```dart\n{res_json}\n```"
+                self.validate_results.value = markdown_text
             except:
                 res_plotted = frame
             img_pil = Image.fromarray(res_plotted)
