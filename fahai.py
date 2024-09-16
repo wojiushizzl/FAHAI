@@ -12,6 +12,7 @@ from PIL import Image
 import shutil
 from typing import Dict
 
+
 class FAHAI:
     def __init__(self, page: ft.Page):
         self.page = page
@@ -23,10 +24,11 @@ class FAHAI:
         self.prog_bars: Dict[str, ft.ProgressRing] = {}
         self.files = ft.Ref[ft.Column]()
         self.target_directory = None
-        self.cap=None
+        self.cap = None
         self.setup_ui()
 
     def setup_ui(self):
+        # components for projects_page
         self.selected_project_text = ft.Text(f"这是 {self.selected_project}")
         self.new_project_name = ft.TextField(label='Project Name', hint_text="Create a new project ?", expand=True)
         self.new_project_type = ft.Dropdown(
@@ -46,7 +48,10 @@ class FAHAI:
             spacing=5,
             run_spacing=5,
         )
-        self.img_element = ft.Image(src="./component/bosch-company-equipment-logo-wallpaper.jpg", fit=ft.ImageFit.COVER, expand=True)
+
+        # components for datasets_page
+        self.img_element = ft.Image(src="./component/bosch-company-equipment-logo-wallpaper.jpg", fit=ft.ImageFit.COVER,
+                                    expand=True)
         self.text_element = ft.Text("waiting...")
         self.camera_dropdown = ft.Dropdown(
             label="选择摄像头",
@@ -56,18 +61,27 @@ class FAHAI:
         )
         self.start_button = ft.ElevatedButton("开始", on_click=self.start_camera)
         self.stop_button = ft.ElevatedButton("结束", on_click=self.stop_camera)
-        self.take_photo_button = ft.ElevatedButton('Take Photo', icon=ft.icons.CAMERA, bgcolor='green', on_click=self.take_photo)
+        self.take_photo_button = ft.ElevatedButton('Take Photo', icon=ft.icons.CAMERA, bgcolor='green',
+                                                   on_click=self.take_photo)
         self.predict_on = ft.Switch(label='Load YOLO', label_position=ft.LabelPosition.LEFT)
-        self.upload_zip_button = ft.ElevatedButton("Auto-Upload", icon=ft.icons.UPLOAD, on_click=self.upload_zip, expand=True)
-        self.label_studio_button = ft.TextButton("Label-studio", icon=ft.icons.OPEN_IN_NEW, on_click=self.open_label_studio)
+        self.upload_zip_button = ft.ElevatedButton("Auto-Upload", icon=ft.icons.UPLOAD, on_click=self.upload_zip,
+                                                   expand=True)
+        self.label_studio_button = ft.TextButton("Label-studio", icon=ft.icons.OPEN_IN_NEW,
+                                                 on_click=self.open_label_studio)
         self.file_picker = ft.FilePicker(on_result=self.file_picker_result)
         self.page.overlay.append(self.file_picker)
 
         self.images_card = ft.Container(self.dataset_card(ft.icons.IMAGE, 'images', self.images_count), expand=3)
-        self.labels_card = ft.Container(self.dataset_card(ft.icons.DOCUMENT_SCANNER, 'labels', self.labels_count), expand=3)
-        self.classfile_card = ft.Container(self.dataset_card(ft.icons.DOCUMENT_SCANNER_OUTLINED, 'classes.txt', self.classfile_exist), expand=3)
-        self.frame_width_input=ft.TextField(label='width', value="640", width=80)
-        self.frame_height_input=ft.TextField(label='height', value="480", width=80)
+        self.labels_card = ft.Container(self.dataset_card(ft.icons.DOCUMENT_SCANNER, 'labels', self.labels_count),
+                                        expand=3)
+        self.classfile_card = ft.Container(
+            self.dataset_card(ft.icons.DOCUMENT_SCANNER_OUTLINED, 'classes.txt', self.classfile_exist), expand=3)
+        self.frame_width_input = ft.TextField(label='width', value="640", width=80)
+        self.frame_height_input = ft.TextField(label='height', value="480", width=80)
+        self.webview = ft.WebView(url="http://localhost:8088/projects/?page=1")
+
+        
+        # datasets_page
         self.datasets_page = ft.Row(
             [ft.Container(
                 ft.Column(
@@ -80,7 +94,8 @@ class FAHAI:
                         ft.Column(ref=self.files, visible=False)
                     ]), expand=2),
                 ft.Container(
-                    ft.Column([self.img_element, ], alignment=ft.MainAxisAlignment.SPACE_AROUND, horizontal_alignment=ft.CrossAxisAlignment.CENTER),
+                    ft.Column([self.img_element, ], alignment=ft.MainAxisAlignment.SPACE_AROUND,
+                              horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                     bgcolor=ft.colors.BLUE_50, expand=8),
                 ft.Container(
                     ft.Column([
@@ -94,15 +109,20 @@ class FAHAI:
                     bgcolor=ft.colors.BLUE_50, expand=2),
             ]
         )
+        # train_page
         self.train_page = ft.Container(self.selected_project_text)
+
+        # validate_page
         self.validate_page = ft.Container(self.selected_project_text)
 
+        # tabs
         self.t = ft.Tabs(selected_index=0, animation_duration=300, on_change=self.update_datasets_card, tabs=[
             ft.Tab(
                 text='Projects',
                 icon=ft.icons.TASK,
                 content=ft.Column(
-                    [ft.Row([self.new_project_name, self.new_project_type, ft.FloatingActionButton(icon=ft.icons.ADD, on_click=self.create_project_box), ]),
+                    [ft.Row([self.new_project_name, self.new_project_type,
+                             ft.FloatingActionButton(icon=ft.icons.ADD, on_click=self.create_project_box), ]),
                      self.images, ])
             ),
             ft.Tab(
@@ -120,6 +140,11 @@ class FAHAI:
                 icon=ft.icons.FACT_CHECK,
                 content=self.validate_page,
             ),
+            ft.Tab(
+                text='Label-studio',
+                icon=ft.icons.LABEL,
+                content=ft.Container(self.webview, expand=1)
+            )
         ], expand=1)
 
         self.setup_page()
@@ -130,7 +155,9 @@ class FAHAI:
             ft.View(
                 "/",
                 [
-                    ft.AppBar(title=ft.Text(f'Welcome to FAHAI develop tool ! project :[{self.selected_project}] selected '), bgcolor=ft.colors.SURFACE_VARIANT),
+                    ft.AppBar(
+                        title=ft.Text(f'Welcome to FAHAI develop tool ! project :[{self.selected_project}] selected '),
+                        bgcolor=ft.colors.SURFACE_VARIANT),
                     self.create_develop_content(),
                 ]
             )
@@ -153,7 +180,8 @@ class FAHAI:
                 self.files.current.controls.append(ft.Row([prog, ft.Text(f.name)]))
                 self.page.update()
                 try:
-                    target_path = self.target_directory if f.name == 'classes.txt' else os.path.join(self.target_directory, f.name)
+                    target_path = self.target_directory if f.name == 'classes.txt' else os.path.join(
+                        self.target_directory, f.name)
                     shutil.copy(f.path, target_path)
                     self.snack_message(f"{f.name} 已复制到 {self.target_directory}", 'green')
                     self.prog_bars[f.name].value = 1.0
@@ -183,31 +211,33 @@ class FAHAI:
 
     def open_label_studio(self, e):
         # 启动 Label Studio，指定端口
-        port=8088
-        conda_env='yolov8'
+        port = 8088
+        conda_env = 'yolov8'
         # 构建命令字符串，激活conda环境并运行label-studio
-        label_studio_thread=threading.Thread(target=self.label_studio, args=(port, ))
+        label_studio_thread = threading.Thread(target=self.label_studio, args=(port,))
         label_studio_thread.start()
 
-    def label_studio(self,port):
+    def label_studio(self, port):
         try:
-            # subprocess.run(command, shell=True, check=True, executable="/bin/bash")  # Linux/Unix 系统
-            # # Windows上将 `executable="/bin/bash"` 替换为 `executable="C:/Path/To/Your/Shell"`
-            subprocess.run(['label-studio', 'start', '--port', str(port)], check=True)
+            # "label-studio init test_project"   # 初始化项目
+            # "label-studio start test_project --sampling sequential" # 启动项目
+            subprocess.run(['label-studio', 'start', '--port', str(port)], check=True) # 启动label studio
 
-            messagge =f'Load label Studio success at {port}'
-            color='green'
+            messagge = f'Load label Studio success at {port}'
+            color = 'green'
         except subprocess.CalledProcessError as e:
-            messagge=f"Error starting Label Studio: {e}"
-            color='red'
+            messagge = f"Error starting Label Studio: {e}"
+            color = 'red'
         except FileNotFoundError:
-            messagge="Label Studio is not installed or not found in PATH."
-            color='red'
+            messagge = "Label Studio is not installed or not found in PATH."
+            color = 'red'
         self.snack_message(messagge, color)
+
     def update_datasets_card(self, e):
         self.images_card.content = self.dataset_card(ft.icons.IMAGE, 'images', self.images_count)
         self.labels_card.content = self.dataset_card(ft.icons.DOCUMENT_SCANNER, 'labels', self.labels_count)
-        self.classfile_card.content = self.dataset_card(ft.icons.DOCUMENT_SCANNER_OUTLINED, 'classes.txt', self.classfile_exist)
+        self.classfile_card.content = self.dataset_card(ft.icons.DOCUMENT_SCANNER_OUTLINED, 'classes.txt',
+                                                        self.classfile_exist)
         self.images_card.update()
         self.labels_card.update()
         self.classfile_card.update()
@@ -227,7 +257,8 @@ class FAHAI:
                         ft.Row(
                             [
                                 ft.TextButton('import', icon=ft.icons.UPLOAD, data=text, on_click=self.upload_datasets),
-                                ft.TextButton('delete all', icon=ft.icons.DELETE, data=text, on_click=self.delete_datasets)
+                                ft.TextButton('delete all', icon=ft.icons.DELETE, data=text,
+                                              on_click=self.delete_datasets)
                             ],
                             alignment=ft.MainAxisAlignment.END,
                         ),
@@ -238,7 +269,7 @@ class FAHAI:
         )
 
     def take_photo(self, e):
-        #获取当前摄像头frame，保存到指定目录下，结合camera_thread
+        # 获取当前摄像头frame，保存到指定目录下，结合camera_thread
         try:
             if not self.cap.isOpened():
                 self.snack_message(f'摄像头未启动 {e}', 'red')
@@ -275,11 +306,11 @@ class FAHAI:
         self.cap = cv2.VideoCapture(camera_index)
         if not self.cap.isOpened():
             self.text_element.value = "CAM start failed"
-            self.snack_message("CAM start failed",'red')
+            self.snack_message("CAM start failed", 'red')
             self.page.update()
             return
         self.text_element.value = "CAM start success"
-        self.snack_message("CAM start success",'green')
+        self.snack_message("CAM start success", 'green')
         self.page.update()
         while getattr(threading.currentThread(), "do_run", True):
             ret, frame = self.cap.read()
@@ -327,9 +358,13 @@ class FAHAI:
 
     def count_datasets(self, project):
         selected_project = project
-        self.images_count = function.count_image_files(os.path.join(os.getcwd(), 'projects', str(selected_project), 'datasets', 'images'))
-        self.labels_count = function.count_txt_files(os.path.join(os.getcwd(), 'projects', str(selected_project), 'datasets', 'labels'))
-        self.classfile_exist = function.find_file(os.path.join(os.getcwd(), 'projects', str(selected_project), 'datasets', 'labels')) or function.find_file(os.path.join(os.getcwd(), 'projects', str(selected_project), 'datasets'))
+        self.images_count = function.count_image_files(
+            os.path.join(os.getcwd(), 'projects', str(selected_project), 'datasets', 'images'))
+        self.labels_count = function.count_txt_files(
+            os.path.join(os.getcwd(), 'projects', str(selected_project), 'datasets', 'labels'))
+        self.classfile_exist = function.find_file(
+            os.path.join(os.getcwd(), 'projects', str(selected_project), 'datasets', 'labels')) or function.find_file(
+            os.path.join(os.getcwd(), 'projects', str(selected_project), 'datasets'))
         print(self.images_count, self.labels_count, self.classfile_exist)
         self.page.update()
 
@@ -386,6 +421,7 @@ class FAHAI:
             create_time, modify_time, _ = function.get_folder_info(p_path)
             description = f'create time :\n{create_time}\nmodify time:\n {modify_time}\n'
             self.images.controls.append(
-                self.project_card(icon=ft.icons.AUTO_AWESOME, text=p, description=description, action1='Select', action2='Delete')
+                self.project_card(icon=ft.icons.AUTO_AWESOME, text=p, description=description, action1='Select',
+                                  action2='Delete')
             )
         return self.images

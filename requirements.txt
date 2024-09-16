@@ -1,1 +1,3 @@
 flet==0.22.*
+ultralytics
+label-studio
