@@ -14,7 +14,7 @@ device: null
 workers: 8
 project: C:\Users\ZZL\OneDrive\桌面\ZZL_projects\FAHAI\FAHAI\projects\ZZL_Detect\train
 name: train
-exist_ok: false
+exist_ok: true
 pretrained: true
 optimizer: auto
 verbose: true

@@ -18,6 +18,7 @@ def count_txt_files(directory):
                 count += 1
     return count
 
+
 def count_image_files(directory):
     count = 0
     extensions = ["jpg", "png", "jpeg", "bmp", "gif"]
@@ -28,11 +29,13 @@ def count_image_files(directory):
                     count += 1
     return count
 
+
 def find_file(directory, filename='classes.txt'):
     for root, dirs, files in os.walk(directory):  # 遍历目录及其子目录
         if filename in files:  # 如果在当前文件夹中找到指定文件名
             return True
     return False
+
 
 ### Develop page tab1 dataset functions
 def get_project_folders():
@@ -60,7 +63,7 @@ def get_folder_info(folder_path):
 
 
 def update_folder_imfo(selected_folder, window):
-    if selected_folder :
+    if selected_folder:
         folder_path = os.path.join(os.getcwd(), 'projects', selected_folder)
         create_time, modify_time, tree_structure = get_folder_info(folder_path)
         # 更新显示的文件夹信息
@@ -69,18 +72,18 @@ def update_folder_imfo(selected_folder, window):
         window['-FOLDER TREE-'].update("\n".join(tree_structure))
         task_type = selected_folder.split("_", 1)[1]
         try:
-            train_folder_path = os.path.join(folder_path,'train')
+            train_folder_path = os.path.join(folder_path, 'train')
             items = os.listdir(train_folder_path)
             train_list = [item for item in items if os.path.isdir(os.path.join(train_folder_path, item))]
         except:
-            train_list=[]
+            train_list = []
     else:
         window['-CREATE TIME-'].update(None)
         window['-MODIFY TIME-'].update(None)
         window['-FOLDER TREE-'].update(None)
-        task_type=None
+        task_type = None
         train_list = []
-    return task_type,train_list
+    return task_type, train_list
 
 
 # 删除文件或者文件夹路径，如果是文件夹则保留文件夹，删除文件夹下所有文件
@@ -91,13 +94,15 @@ def delete_file(file_path):
         elif os.path.isdir(file_path):
             for f in os.listdir(file_path):
                 os.remove(os.path.join(file_path, f))
-        message=f"文件 '{file_path}' 已经删除。"
+        message = f"文件 '{file_path}' 已经删除。"
     except Exception as e:
-        message=f"删除文件或文件夹时出错: {e}"
+        message = f"删除文件或文件夹时出错: {e}"
     return message
+
 
 def get_uuid():
     return str(uuid.uuid1())
+
 
 def creat_project(folder_name, task_type):
     projects_path = os.path.join(os.getcwd(), 'projects')
@@ -116,12 +121,13 @@ def creat_project(folder_name, task_type):
         os.makedirs(images_folder_path)
         os.makedirs(labels_folder_path)
 
-        message=f"Project '{folder_name}' 已成功创建在 '{projects_path}' 下。"
+        message = f"Project '{folder_name}' 已成功创建在 '{projects_path}' 下。"
     except FileExistsError:
-        message=f"Project '{folder_name}' 已经存在。"
+        message = f"Project '{folder_name}' 已经存在。"
     except Exception as e:
-        message=f"创建Project 时出错: {e}"
+        message = f"创建Project 时出错: {e}"
     return message
+
 
 def delete_project(selected_folder):
     folder_path = os.path.join(os.getcwd(), 'projects', selected_folder)
@@ -131,11 +137,8 @@ def delete_project(selected_folder):
         for dir in dirs:
             os.rmdir(os.path.join(root, dir))
     os.rmdir(folder_path)
-    message=f"项目 '{selected_folder}' 已经删除。"
+    message = f"项目 '{selected_folder}' 已经删除。"
     return message
-
-
-
 
 
 def run_label_studio(window):
@@ -145,7 +148,7 @@ def run_label_studio(window):
 
 
 def get_all_classes(project_name):
-    classes_txt_path = os.path.join(os.getcwd(),'projects', project_name, 'datasets', 'classes.txt')
+    classes_txt_path = os.path.join(os.getcwd(), 'projects', project_name, 'datasets', 'classes.txt')
     # print(classes_txt_path)
     result_dict = {}
     if os.path.exists(classes_txt_path):
@@ -179,6 +182,20 @@ def update_yaml(project_name):
         raise FileNotFoundError("classes.txt 文件不存在")
 
 
+def get_epoch_value(yaml_file):
+    # 打开并读取 YAML 文件
+    with open(yaml_file, 'r', encoding="utf-8") as file:
+        try:
+            config = yaml.load(file)  # 解析 YAML 文件内容
+            # 获取 epoch 的值
+            if 'epochs' in config:
+                return config['epochs']
+            else:
+                raise ValueError("YAML 文件中没有找到 'epoch' 键")
+        except Exception as e:
+            ValueError(f"读取 YAML 文件时出错: {e}")
+
+
 def create_yaml(project_name):
     # file_name = project_name + '/train.yaml'
     # 复制文件
@@ -191,7 +208,7 @@ def create_yaml(project_name):
     with open(file_path, "r", encoding="utf-8") as file:
         lines = yaml.load(file)
 
-    path = os.path.join( 'projects',project_name, 'datasets')
+    path = os.path.join('projects', project_name, 'datasets')
     if "path" in lines:
         lines["path"] = path
 
@@ -200,43 +217,32 @@ def create_yaml(project_name):
         yaml.dump(lines, file)
 
 
-# def run_train_seg(window,*args):
-#     window['-GIF IMAGE2-'].update(visible=True)
-#
-#     from yolov8_seg_train2 import train as seg_train
-#     try:
-#         seg_train(*args)
-#         print("训练完成")
-#     except Exception as e:
-#         print(e)
-#     window['-GIF IMAGE2-'].update(visible=False)
-#
-# def run_train_det(window,*args):
-#     window['-GIF IMAGE2-'].update(visible=True)
-#
-#     from yolov8_det_train2 import train as det_train
-#     try:
-#         print("开始训练...")
-#         det_train(*args)
-#         print("训练完成")
-#     except Exception as e:
-#         print(e)
-#     window['-GIF IMAGE2-'].update(visible=False)
+def delete_train(project, train_name):
+    folder_path = os.path.join(os.getcwd(), 'projects', project, 'train', train_name)
+    if os.path.exists(folder_path):
+        try:
+            # 删除文件夹及其所有内容
+            shutil.rmtree(folder_path)
+            message = (f"文件夹 '{folder_path}' 已删除")
+        except Exception as e:
+            message = (f"删除文件夹时出错: {e}")
+    else:
+        message = (f"文件夹 '{folder_path}' 不存在")
+    return message
 
 def stop_python_file():
     print("停止训练...")
 
 
-
-def get_seg_args_list(values,exist_ok,single_cls):
+def get_seg_args_list(values, exist_ok, single_cls):
     if exist_ok:
-        e=str(exist_ok)
+        e = str(exist_ok)
     else:
-        e=''
+        e = ''
     if single_cls:
-        s=str(single_cls)
+        s = str(single_cls)
     else:
-        s=''
+        s = ''
     args_list = [
         str(values['-train name-']),
         str(values['-SELECTED FOLDER-']),
@@ -250,15 +256,15 @@ def get_seg_args_list(values,exist_ok,single_cls):
     return args_list
 
 
-def get_det_args_list(values,exist_ok,single_cls):
+def get_det_args_list(values, exist_ok, single_cls):
     if exist_ok:
-        e=str(exist_ok)
+        e = str(exist_ok)
     else:
-        e=''
+        e = ''
     if single_cls:
-        s=str(single_cls)
+        s = str(single_cls)
     else:
-        s=''
+        s = ''
     args_list = [
         str(values['-train name-']),
         str(values['-SELECTED FOLDER-']),
@@ -283,11 +289,10 @@ def get_det_args_list(values,exist_ok,single_cls):
     # print(args_list)
     return args_list
 
+
 def get_weights_list(train_path):
     try:
         items = os.listdir(train_path)
         return items
     except:
         return []
-
-
