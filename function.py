@@ -1,12 +1,11 @@
 import os
 import time
-import FreeSimpleGUI as sg
 import shutil
 import ruamel.yaml
 import subprocess
 import threading
 import fnmatch
-
+import uuid
 
 yaml = ruamel.yaml.YAML()
 
@@ -84,6 +83,22 @@ def update_folder_imfo(selected_folder, window):
     return task_type,train_list
 
 
+# 删除文件或者文件夹路径，如果是文件夹则保留文件夹，删除文件夹下所有文件
+def delete_file(file_path):
+    try:
+        if os.path.isfile(file_path):
+            os.remove(file_path)
+        elif os.path.isdir(file_path):
+            for f in os.listdir(file_path):
+                os.remove(os.path.join(file_path, f))
+        message=f"文件 '{file_path}' 已经删除。"
+    except Exception as e:
+        message=f"删除文件或文件夹时出错: {e}"
+    return message
+
+def get_uuid():
+    return str(uuid.uuid1())
+
 def creat_project(folder_name, task_type):
     projects_path = os.path.join(os.getcwd(), 'projects')
     if not os.path.exists(projects_path):
@@ -120,72 +135,8 @@ def delete_project(selected_folder):
     return message
 
 
-def upload_image(save_location):
-    files = sg.popup_get_file(message="请选择文件", multiple_files=True,
-                              file_types=(("Image Files", "*.jpg;*.jpeg;*.png;*.bmp;*.gif"),))
-    print(files)
-    if files:
-        files = files.split(';')
-        for file_path in files:
-            try:
-                filename = os.path.basename(file_path)
-                save_path = os.path.join(save_location, filename)
-                with open(file_path, 'rb') as file:
-                    content = file.read()
-                with open(save_path, 'wb') as file:
-                    file.write(content)
-            except Exception as e:
-                sg.popup(f'保存文件时出错: {str(e)}', title='错误')
-                return
-        sg.popup(f'保存文件完成', title='成功')
-    else:
-        sg.popup("未选中任何文件")
 
 
-def upload_label(save_location):
-    files = sg.popup_get_file(message="请选择文件", multiple_files=True, file_types=(("TXT Files", "*.txt"),))
-    print(files)
-    if files:
-        files = files.split(';')
-        for file_path in files:
-            try:
-                filename = os.path.basename(file_path)
-                save_path = os.path.join(save_location, filename)
-                with open(file_path, 'rb') as file:
-                    content = file.read()
-                with open(save_path, 'wb') as file:
-                    file.write(content)
-            except Exception as e:
-                sg.popup(f'保存文件时出错: {str(e)}', title='错误')
-                return
-        sg.popup(f'保存文件完成', title='成功')
-    else:
-        sg.popup("未选中任何文件")
-
-
-def upload_class(save_location, save_location2):
-    files = sg.popup_get_file(message="请选择文件", multiple_files=False, file_types=(("TXT Files", "*.txt"),))
-    print(files)
-    if files:
-        files = files.split(';')
-        for file_path in files:
-            try:
-                filename = os.path.basename(file_path)
-                save_path = os.path.join(save_location, filename)
-                save_path2 = os.path.join(save_location2, filename)
-
-                with open(file_path, 'rb') as file:
-                    content = file.read()
-                with open(save_path, 'wb') as file:
-                    file.write(content)
-                with open(save_path2, 'wb') as file:
-                    file.write(content)
-            except Exception as e:
-                sg.popup(f'保存文件时出错: {str(e)}', title='错误')
-                return
-        sg.popup(f'保存文件完成', title='成功')
-    else:
-        sg.popup("未选中任何文件")
 
 def run_label_studio(window):
     window['-GIF IMAGE-'].update(visible=True)
@@ -224,7 +175,7 @@ def update_yaml(project_name):
             yaml.dump(lines, file)
         # print('yaml file updated')
     else:
-        sg.popup('分类文件不存在，请先上传classes.txt')
+        print('分类文件不存在，请先上传classes.txt')
 
 
 def create_yaml(project_name):
@@ -248,28 +199,28 @@ def create_yaml(project_name):
         yaml.dump(lines, file)
 
 
-def run_train_seg(window,*args):
-    window['-GIF IMAGE2-'].update(visible=True)
-
-    from yolov8_seg_train2 import train as seg_train
-    try:
-        seg_train(*args)
-        print("训练完成")
-    except Exception as e:
-        print(e)
-    window['-GIF IMAGE2-'].update(visible=False)
-
-def run_train_det(window,*args):
-    window['-GIF IMAGE2-'].update(visible=True)
-
-    from yolov8_det_train2 import train as det_train
-    try:
-        print("开始训练...")
-        det_train(*args)
-        print("训练完成")
-    except Exception as e:
-        print(e)
-    window['-GIF IMAGE2-'].update(visible=False)
+# def run_train_seg(window,*args):
+#     window['-GIF IMAGE2-'].update(visible=True)
+#
+#     from yolov8_seg_train2 import train as seg_train
+#     try:
+#         seg_train(*args)
+#         print("训练完成")
+#     except Exception as e:
+#         print(e)
+#     window['-GIF IMAGE2-'].update(visible=False)
+#
+# def run_train_det(window,*args):
+#     window['-GIF IMAGE2-'].update(visible=True)
+#
+#     from yolov8_det_train2 import train as det_train
+#     try:
+#         print("开始训练...")
+#         det_train(*args)
+#         print("训练完成")
+#     except Exception as e:
+#         print(e)
+#     window['-GIF IMAGE2-'].update(visible=False)
 
 def stop_python_file():
     print("停止训练...")
@@ -339,10 +290,3 @@ def get_weights_list(train_path):
         return []
 
 
-
-def  show_train_results(train_path):
-    from  show_train_results import main as show_train_results
-    try:
-        show_train_results(train_path)
-    except Exception as e:
-        sg.popup(e)

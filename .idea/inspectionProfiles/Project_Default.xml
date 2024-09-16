@@ -1,0 +1,22 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPackageRequirementsInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredPackages">
+        <value>
+          <list size="9">
+            <item index="0" class="java.lang.String" itemvalue="playsound" />
+            <item index="1" class="java.lang.String" itemvalue="Jetson.GPIO" />
+            <item index="2" class="java.lang.String" itemvalue="psycopg2" />
+            <item index="3" class="java.lang.String" itemvalue="label-studio" />
+            <item index="4" class="java.lang.String" itemvalue="bottle" />
+            <item index="5" class="java.lang.String" itemvalue="hydralit_components" />
+            <item index="6" class="java.lang.String" itemvalue="streamlit_card" />
+            <item index="7" class="java.lang.String" itemvalue="ultralytics" />
+            <item index="8" class="java.lang.String" itemvalue="PyAutoGUI" />
+          </list>
+        </value>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
