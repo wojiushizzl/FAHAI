@@ -134,7 +134,7 @@ class FAHAI:
         self.train_settings_progress_ring = ft.ProgressBar(height=10, visible=False, expand=True)
 
         # 添加components 用于显示训练过程后台的日志进度
-        self.train_progress_bar = ft.ProgressBar(visible=False, height=5,expand=True)
+        self.train_progress_bar = ft.ProgressBar(visible=False, height=5)
         self.train_result_table = ft.Markdown(
             selectable=True,
             extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
@@ -375,10 +375,11 @@ class FAHAI:
 
     def update_train_progress(self, e):
         while self.train_settings_progress_ring.visible == True:
+            time.sleep(10)
             self.train_settings_history.value = self.train_settings_train_name.value
+            self.train_settings_history.update()
             self.update_result_table(e)
             self.page.update()
-            time.sleep(10)
         return
 
     def start_train(self, e):
@@ -417,43 +418,49 @@ class FAHAI:
         mixup = float(self.train_settings_mixup.value)
         copy_paste = float(self.train_settings_copy_paste.value)
         if train_type == "Detect":
-            yolov8_train.det_train(
-                name=name,
-                project_name=project_name,
-                epochs=epochs,
-                batch=batch,
-                patience=patience,
-                exist_ok=exist_ok,
-                single_cls=single_cls,
-                imgsz=imgsz,
-                degrees=degrees,
-                translate=translate,
-                scale=scale,
-                flipud=flipud,
-                fliplr=fliplr,
-                mosaic=mosaic,
-                mixup=mixup,
-                copy_paste=copy_paste
-            )
+            try:
+                yolov8_train.det_train(
+                    name=name,
+                    project_name=project_name,
+                    epochs=epochs,
+                    batch=batch,
+                    patience=patience,
+                    exist_ok=exist_ok,
+                    single_cls=single_cls,
+                    imgsz=imgsz,
+                    degrees=degrees,
+                    translate=translate,
+                    scale=scale,
+                    flipud=flipud,
+                    fliplr=fliplr,
+                    mosaic=mosaic,
+                    mixup=mixup,
+                    copy_paste=copy_paste
+                )
+            except Exception as e:
+                self.snack_message(f"Error starting train: {e}", 'red')
         elif train_type == "Segment":
-            yolov8_train.seg_train(
-                name=name,
-                project_name=project_name,
-                epochs=epochs,
-                batch=batch,
-                patience=patience,
-                exist_ok=exist_ok,
-                single_cls=single_cls,
-                imgsz=imgsz,
-                degrees=degrees,
-                translate=translate,
-                scale=scale,
-                flipud=flipud,
-                fliplr=fliplr,
-                mosaic=mosaic,
-                mixup=mixup,
-                copy_paste=copy_paste
-            )
+            try:
+                yolov8_train.seg_train(
+                    name=name,
+                    project_name=project_name,
+                    epochs=epochs,
+                    batch=batch,
+                    patience=patience,
+                    exist_ok=exist_ok,
+                    single_cls=single_cls,
+                    imgsz=imgsz,
+                    degrees=degrees,
+                    translate=translate,
+                    scale=scale,
+                    flipud=flipud,
+                    fliplr=fliplr,
+                    mosaic=mosaic,
+                    mixup=mixup,
+                    copy_paste=copy_paste
+                )
+            except Exception as e:
+                self.snack_message(f"Error starting train: {e}", 'red')
         else:
             self.snack_message("current only support Detect & Segment task", color='red')
         self.train_settings_progress_ring.visible = False
