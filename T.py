@@ -1,52 +1,65 @@
 import flet as ft
 
-def main(page: ft.Page):
-    page.title = "文本自定义样式"
-    page.scroll = "adaptive"
-
+def main(page):
+    page.title = "ListTile 示例"
     page.add(
-        ft.Text("大小 10", size=10),
-        ft.Text("大小 30，斜体", size=30, color="pink600", italic=True),
-        ft.Text(
-            "大小 40，w100",
-            size=40,
-            color=ft.colors.WHITE,
-            bgcolor=ft.colors.BLUE_600,
-            weight=ft.FontWeight.W_100,
-        ),
-        ft.Text(
-            "大小 50，正常",
-            size=50,
-            color=ft.colors.WHITE,
-            bgcolor=ft.colors.ORANGE_800,
-            weight=ft.FontWeight.NORMAL,
-        ),
-        ft.Text(
-            "大小 60，加粗，斜体",
-            size=50,
-            color=ft.colors.WHITE,
-            bgcolor=ft.colors.GREEN_700,
-            weight=ft.FontWeight.BOLD,
-            italic=True,
-        ),
-        ft.Text("大小 70，w900，可选", size=70, weight=ft.FontWeight.W_900, selectable=True),
-        ft.Text("将长文本限制为 1 行并使用省略号", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
-        ft.Text(
-            "Proin rutrum, purus sit amet elementum volutpat, nunc lacus vulputate orci, cursus ultrices neque dui quis purus. Ut ultricies purus nec nibh bibendum, eget vestibulum metus varius. Duis convallis maximus justo, eu rutrum libero maximus id. Donec ullamcorper arcu in sapien molestie, non pellentesque tellus pellentesque. Nulla nec tristique ex. Maecenas euismod nisl enim, a convallis arcu laoreet at. Ut at tortor finibus, rutrum massa sit amet, pulvinar velit. Phasellus diam lorem, viverra vitae leo vitae, consequat suscipit lorem.",
-            max_lines=1,
-            overflow=ft.TextOverflow.ELLIPSIS,
-        ),
-        ft.Text("将长文本限制为 2 行并使用渐变效果", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
-        ft.Text(
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur quis nibh vitae purus consectetur facilisis sed vitae ipsum. Quisque faucibus sed nulla placerat sagittis. Phasellus condimentum risus vitae nulla vestibulum auctor. Curabitur scelerisque, nibh eget imperdiet consequat, odio ante tempus diam, sed volutpat nisl erat eget turpis. Sed viverra, diam sit amet blandit vulputate, mi tellus dapibus lorem, vitae vehicula diam mauris placerat diam. Morbi sit amet pretium turpis, et consequat ligula. Nulla velit sem, suscipit sit amet dictum non, tincidunt sed nulla. Aenean pellentesque odio porttitor sagittis aliquam. Nam varius at metus vitae vulputate. Praesent faucibus nibh lorem, eu pretium dolor dictum nec. Phasellus eget dui laoreet, viverra magna vitae, pellentesque diam.",
-            max_lines=2,
-        ),
-        ft.Text("限制长文本的宽度和高度", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
-        ft.Text(
-            "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur quis nibh vitae purus consectetur facilisis sed vitae ipsum. Quisque faucibus sed nulla placerat sagittis. Phasellus condimentum risus vitae nulla vestibulum auctor. Curabitur scelerisque, nibh eget imperdiet consequat, odio ante tempus diam, sed volutpat nisl erat eget turpis. Sed viverra, diam sit amet blandit vulputate, mi tellus dapibus lorem, vitae vehicula diam mauris placerat diam. Morbi sit amet pretium turpis, et consequat ligula. Nulla velit sem, suscipit sit amet dictum non, tincidunt sed nulla. Aenean pellentesque odio porttitor sagittis aliquam. Nam varius at metus vitae vulputate. Praesent faucibus nibh lorem, eu pretium dolor dictum nec. Phasellus eget dui laoreet, viverra magna vitae, pellentesque diam.",
-            width=700,
-            height=100,
-        ),
+        ft.Card(
+            content=ft.Container(
+                width=500,
+                content=ft.Column(
+                    [
+                        ft.ListTile(
+                            title=ft.Text("一行列表Tile"),
+                        ),
+                        ft.ListTile(title=ft.Text("一行紧凑列表Tile"), dense=True),
+                        ft.ListTile(
+                            leading=ft.Icon(ft.icons.SETTINGS),
+                            title=ft.Text("一行选中列表Tile"),
+                            selected=True,
+                        ),
+                        ft.ListTile(
+                            leading=ft.Image(src="/icons/icon-192.png", fit="contain"),
+                            title=ft.Text("一行带leading控件"),
+                        ),
+                        ft.ListTile(
+                            title=ft.Text("一行带trailing控件"),
+                            trailing=ft.PopupMenuButton(
+                                icon=ft.icons.MORE_VERT,
+                                items=[
+                                    ft.PopupMenuItem(text="Item 1"),
+                                    ft.PopupMenuItem(text="Item 2"),
+                                ],
+                            ),
+                        ),
+                        ft.ListTile(
+                            leading=ft.Icon(ft.icons.ALBUM),
+                            title=ft.Text("一行带leading和trailing控件"),
+                            trailing=ft.PopupMenuButton(
+                                icon=ft.icons.MORE_VERT,
+                                items=[
+                                    ft.PopupMenuItem(text="Item 1"),
+                                    ft.PopupMenuItem(text="Item 2"),
+                                ],
+                            ),
+                        ),
+                        ft.ListTile(
+                            leading=ft.Icon(ft.icons.SNOOZE),
+                            title=ft.Text("两行带leading和trailing控件"),
+                            subtitle=ft.Text("这是第二个标题。"),
+                            trailing=ft.PopupMenuButton(
+                                icon=ft.icons.MORE_VERT,
+                                items=[
+                                    ft.PopupMenuItem(text="Item 1"),
+                                    ft.PopupMenuItem(text="Item 2"),
+                                ],
+                            ),
+                        ),
+                    ],
+                    spacing=0,
+                ),
+                padding=ft.padding.symmetric(vertical=10),
+            )
+        )
     )
 
 ft.app(target=main)
