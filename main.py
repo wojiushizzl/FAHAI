@@ -13,6 +13,10 @@ from typing import Dict
 import yolov8_train
 import pandas as pd
 
+'''TODO
+label-studio 项目启动 命令优化
+
+'''
 
 class FAHAI:
     def __init__(self, page: ft.Page):
@@ -65,7 +69,7 @@ class FAHAI:
         )
         self.start_button = ft.ElevatedButton("START", icon=ft.icons.PLAY_ARROW_ROUNDED, on_click=self.start_camera,expand=True)
         self.stop_button = ft.ElevatedButton("STOP", icon=ft.icons.STOP_ROUNDED, on_click=self.stop_camera,expand=True)
-        self.take_photo_button = ft.ElevatedButton('Take Photo', icon=ft.icons.CAMERA, bgcolor='green',
+        self.take_photo_button = ft.ElevatedButton('Take Photo', icon=ft.icons.CAMERA, bgcolor='green',expand=True,
                                                    on_click=self.take_photo)
         self.predict_on = ft.Switch(label='Load YOLO', label_position=ft.LabelPosition.LEFT)
         self.upload_zip_button = ft.ElevatedButton("Auto-Upload", icon=ft.icons.UPLOAD, on_click=self.upload_zip,
@@ -108,9 +112,14 @@ class FAHAI:
         self.train_settings_batch_size = ft.TextField(label='Batch Size', hint_text="Batch Size", value='2',
                                                       expand=True,
                                                       tooltip="-训练的批量大小，表示在更新模型内部参数之前要处理多少张图像。自动批处理 (batch=-1)会根据 GPU 内存可用性动态调整批处理大小-")
-        self.train_settings_img_size = ft.TextField(label='Image Size', hint_text="Image Size", value='640',
+        self.train_settings_img_size_width = ft.TextField(label='width', hint_text="Image Size", value='640',
                                                     expand=True,
                                                     tooltip="-用于训练的目标图像尺寸。所有图像在输入模型前都会被调整到这一尺寸。影响模型精度和计算复杂度-")
+        self.train_settings_img_size_height = ft.TextField(label='height', hint_text="Image Size", value='480',
+                                                    expand=True,
+                                                    tooltip="-用于训练的目标图像尺寸。所有图像在输入模型前都会被调整到这一尺寸。影响模型精度和计算复杂度-")
+
+
         self.train_settings_patience = ft.Slider(label='Patience', min=0, max=100, divisions=10, value=50, expand=True,
                                                  tooltip="-在验证指标没有改善的情况下，提前停止训练所需的历元数。当性能趋于平稳时停止训练，有助于防止过度拟合-")
         self.train_settings_degree = ft.Slider(label='Degree', min=0, max=360, divisions=10, value=20, expand=True,
@@ -155,7 +164,7 @@ class FAHAI:
                                                       disabled=False)
         self.validate_settings_weight = ft.Dropdown(expand=True, on_change=self.find_weight_path)
         self.validate_img_element = ft.Image(src=self.bg_img,
-                                             fit=ft.ImageFit.FILL,
+                                             fit=ft.ImageFit.COVER,
                                              expand=True)
         self.validate_camera_dropdown = ft.Dropdown(
             label="select CAM",
@@ -195,7 +204,8 @@ class FAHAI:
         self.validate_settings_iou = ft.Slider(label='IOU', min=0, max=1, divisions=10, value=0.5, expand=True)
 
         # datasets_page
-        self.datasets_page = ft.Row([ft.Container(
+        self.datasets_page = ft.Row([
+            ft.Container(
             ft.Column(
                 [
                     self.images_card,
@@ -210,8 +220,10 @@ class FAHAI:
                           horizontal_alignment=ft.CrossAxisAlignment.CENTER),
                 # bgcolor=ft.colors.BLACK if self.page.theme_mode == ft.ThemeMode.DARK else ft.colors.BLUE_50,
                 expand=8),
+            ft.Card(
             ft.Container(
                 ft.Column([
+
                     ft.Row([self.start_button, self.stop_button], expand=True),
                     ft.Row([self.datasets_page_porgress_ring, self.text_element], expand=True),
                     ft.Row([self.predict_on], expand=True),
@@ -220,41 +232,46 @@ class FAHAI:
                     ft.Row([self.take_photo_button], expand=True),
                 ], alignment=ft.MainAxisAlignment.SPACE_AROUND),
                 # bgcolor=ft.colors.BLACK if self.page.theme_mode == ft.ThemeMode.DARK else ft.colors.BLUE_50,
-                expand=2),
+                ),
+            expand=2),
         ])
 
         # train_page
         self.train_page = ft.Row([
-            ft.Container(ft.Column([
+            ft.Card(
+            ft.Container(
+                ft.Column([
                 ft.Row([ft.Text(''), self.train_settings_text]),
                 ft.Row([ft.Text('history', width=80), self.train_settings_history, self.train_settings_resume,
                         self.train_settings_delete]),
-                ft.Row([ft.Text('new train', width=80), self.train_settings_train_name]),
-                ft.Row([ft.Text('exist ok', width=80), self.train_settings_exist_ok]),
-                ft.Row([ft.Text('single cls', width=80), self.train_settings_single_cls]),
-                ft.Row([ft.Text('epochs', width=80), self.train_settings_epochs]),
-                ft.Row([ft.Text('batch size', width=80), self.train_settings_batch_size]),
-                ft.Row([ft.Text('img size', width=80), self.train_settings_img_size]),
-                ft.Row([ft.Text('patience', width=80), self.train_settings_patience]),
-                ft.Row([ft.Text('degree', width=80), self.train_settings_degree]),
-                ft.Row([ft.Text('translate', width=80), self.train_settings_translate]),
-                ft.Row([ft.Text('scale', width=80), self.train_settings_scale]),
-                ft.Row([ft.Text('flipud', width=80), self.train_settings_flipud]),
-                ft.Row([ft.Text('fliplr', width=80), self.train_settings_fliplr]),
-                ft.Row([ft.Text('erasing', width=80), self.train_settings_erasing]),
-                ft.Row([ft.Text('mosaic', width=80), self.train_settings_mosaic]),
-                ft.Row([ft.Text('mixup', width=80), self.train_settings_mixup]),
-                ft.Row([ft.Text('copy paste', width=80), self.train_settings_copy_paste]),
-                ft.Row([self.train_settings_start_button]),
+                ft.Row([ft.Text('new train', width=80), self.train_settings_train_name,ft.Text('',width=10)],),
+                ft.Row([ft.Text('', width=10), self.train_settings_exist_ok,self.train_settings_single_cls,ft.Text('',width=10)]),
+                # ft.Row([ft.Text('single cls', width=80), self.train_settings_single_cls,ft.Text('',width=10)]),
+                ft.Row([ft.Text('epochs', width=80), self.train_settings_epochs,ft.Text('',width=10)]),
+                ft.Row([ft.Text('batch size', width=80), self.train_settings_batch_size,ft.Text('',width=10)]),
+                ft.Row([ft.Text('img size', width=80), self.train_settings_img_size_width,ft.Text('X',width=10),self.train_settings_img_size_height,ft.Text('',width=10)]),
+                ft.Row([ft.Text('patience', width=80), self.train_settings_patience,ft.Text('',width=10)]),
+                ft.Row([ft.Text('degree', width=80), self.train_settings_degree,ft.Text('',width=10)]),
+                ft.Row([ft.Text('translate', width=80), self.train_settings_translate,ft.Text('',width=10)]),
+                ft.Row([ft.Text('scale', width=80), self.train_settings_scale,ft.Text('',width=10)]),
+                ft.Row([ft.Text('flipud', width=80), self.train_settings_flipud,ft.Text('',width=10)]),
+                ft.Row([ft.Text('fliplr', width=80), self.train_settings_fliplr,ft.Text('',width=10)]),
+                ft.Row([ft.Text('erasing', width=80), self.train_settings_erasing,ft.Text('',width=10)]),
+                ft.Row([ft.Text('mosaic', width=80), self.train_settings_mosaic,ft.Text('',width=10)]),
+                ft.Row([ft.Text('mixup', width=80), self.train_settings_mixup,ft.Text('',width=10)]),
+                ft.Row([ft.Text('copy paste', width=80), self.train_settings_copy_paste,ft.Text('',width=10)]),
+                ft.Row([self.train_settings_start_button,ft.Text('',width=10)]),
                 ft.Row([self.train_settings_progress_ring])
 
-            ], scroll=ft.ScrollMode.ALWAYS,tight=False), padding=5,expand=3),
+            ], scroll=ft.ScrollMode.ALWAYS,tight=False)
+                , padding=5),expand=3),
+            ft.Card(
             ft.Container(ft.Column([
                 ft.Text('Train Progress'),
                 self.train_progress_bar,
                 ft.Column([self.train_result_table, ], scroll=ft.ScrollMode.ALWAYS, expand=1)
 
-            ]),
+            ])),
                 # bgcolor=ft.colors.BLUE_50,
                 expand=7),
         ])
@@ -267,13 +284,13 @@ class FAHAI:
                         ft.Column([
                             self.validate_settings_text,
                             ft.Row([ft.Text('history', width=80), self.validate_settings_history,
-                                    self.validate_settings_delete]),
+                                    self.validate_settings_delete,ft.Text('',width=10)]),
                             ft.Row([ft.Text('weight', width=80), self.validate_settings_weight,
-                                    self.validate_weight_manual_select]),
-                            ft.Row([self.validate_model_path]),
-                            ft.Row([ft.Text('select CAM', width=80), self.validate_camera_dropdown]),
+                                    self.validate_weight_manual_select,ft.Text('',width=10)]),
+                            ft.Row([self.validate_model_path,ft.Text('',width=10)]),
+                            ft.Row([ft.Text('select CAM', width=80), self.validate_camera_dropdown,ft.Text('',width=10)]),
                             ft.Row([ft.Text('imgsz', width=80), self.validate_frame_width_input, ft.Text('X'),
-                                    self.validate_frame_height_input]),
+                                    self.validate_frame_height_input,ft.Text('',width=10)]),
                             ft.Row([ft.Text('Confidence', width=80), self.validate_settings_conf]),
                             ft.Row([ft.Text('IOU', width=80), self.validate_settings_iou]),
                         ])),
@@ -290,7 +307,7 @@ class FAHAI:
 
                         ], scroll=ft.ScrollMode.ALWAYS), expand=True)
                 ], scroll=ft.ScrollMode.ALWAYS)
-                , expand=2),
+                , expand=3),
             ft.Container(ft.Column([self.validate_img_element], alignment=ft.MainAxisAlignment.SPACE_AROUND,
                                    horizontal_alignment=ft.CrossAxisAlignment.CENTER), expand=7),
         ])
@@ -343,7 +360,7 @@ class FAHAI:
                                               ft.TextStyle(weight=ft.FontWeight.BOLD,
                                                            color=ft.colors.INDIGO_800 if self.selected_project else ft.colors.RED_800),
 
-                                          ), ]),
+                                          ), ],text_align=ft.TextAlign.RIGHT),
 
                         bgcolor=ft.colors.SURFACE_VARIANT),
                     self.create_develop_content(),
@@ -418,7 +435,8 @@ class FAHAI:
                 self.validate_results.value = markdown_text
 
                 res_plotted = res[0].plot()
-                img_pil = Image.fromarray(res_plotted)
+                frame_bgr = cv2.cvtColor(res_plotted, cv2.COLOR_RGB2BGR)
+                img_pil = Image.fromarray(frame_bgr)
                 img_byte_arr = BytesIO()
                 img_pil.save(img_byte_arr, format="JPEG")
                 img_byte_arr = img_byte_arr.getvalue()
@@ -520,7 +538,7 @@ class FAHAI:
         patience = int(self.train_settings_patience.value)
         exist_ok = self.train_settings_exist_ok.value
         single_cls = self.train_settings_single_cls.value
-        imgsz = int(self.train_settings_img_size.value)
+        imgsz = (int(self.train_settings_img_size_width.value),int(self.train_settings_img_size_height.value))
         degrees = float(self.train_settings_degree.value)
         translate = float(self.train_settings_translate.value)
         scale = float(self.train_settings_scale.value)
@@ -687,6 +705,9 @@ class FAHAI:
     def take_photo(self, e):
         # 获取当前摄像头frame，保存到指定目录下，结合camera_thread
         try:
+            if not self.selected_project:
+                self.snack_message('Please select a project first', 'red')
+                return
             if not self.cap.isOpened():
                 self.snack_message(f'摄像头未启动 {e}', 'red')
                 return
