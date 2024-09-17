@@ -1,4 +1,4 @@
 flet==0.22.*
-ultralytics
-label-studio
-tabulate
+ultralytics==8.1.*
+label-studio==1.11.*
+tabulate==0.9.0
