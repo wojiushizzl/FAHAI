@@ -1,0 +1,1 @@
+{"selected_project": "ZZL_Detect", "model_path": "/Users/mse6hzp/Documents/GitHub/FAHAI/projects/ZZL_Detect/train/train2/weights/best.pt", "deploy_settings_history": "train2", "deploy_settings_camera": "0", "deploy_settings_weight": "best.pt", "deploy_settings_conf": 0.3, "deploy_settings_iou": 0.5, "deploy_frame_width": "640", "deploy_frame_height": "480", "theme_mode": "DARK"}

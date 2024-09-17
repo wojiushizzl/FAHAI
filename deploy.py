@@ -11,23 +11,26 @@ import flet as ft
 import function
 import pandas as pd
 from typing import Dict
-
+import json
 class FAHAI:
+    SETTINGS_FILE = 'settings.json'
+
     def __init__(self, page: ft.Page):
         self.page = page
         self.selected_project = None
-        self.images_count = None
-        self.labels_count = None
-        self.classfile_exist = None
+        # self.images_count = None
+        # self.labels_count = None
+        # self.classfile_exist = None
         self.camera_thread_instance = None
         self.prog_bars: Dict[str, ft.ProgressRing] = {}
         self.files = ft.Ref[ft.Column]()
-        self.target_directory = None
+        # self.target_directory = None
         self.cap = None
         self.model_path = None
         self.bg_img = os.path.join(os.getcwd(), 'component', 'bosch-company-equipment-logo-wallpaper.jpg')
         self.project_list = function.get_project_list()
         self.setup_ui()
+        self.load_settings()
 
     def setup_ui(self):
         self.theme_switch = ft.IconButton(ft.icons.WB_SUNNY_OUTLINED, on_click=self.change_theme)
@@ -73,15 +76,64 @@ class FAHAI:
         self.t = ft.Tabs(selected_index=0, animation_duration=300, tabs=[
             ft.Tab(text="deploy", icon=ft.icons.FACT_CHECK, content=self.deploy_page),
             ft.Tab(text='Settings', icon=ft.icons.SETTINGS, content=self.settings_page)
-        ], expand=1)
+        ], expand=1,on_change=self.save_settings)
 
         self.setup_page()
+
+    def save_settings(self,e=None):
+        settings = {
+            'selected_project': self.selected_project,
+            'model_path': self.model_path,
+            'deploy_settings_history': self.deploy_settings_history.value,
+            'deploy_settings_camera': self.deploy_camera_dropdown.value,
+            'deploy_settings_weight': self.deploy_settings_weight.value,
+            'deploy_settings_conf': self.deploy_settings_conf.value,
+            'deploy_settings_iou': self.deploy_settings_iou.value,
+            'deploy_frame_width': self.deploy_frame_width_input.value,
+            'deploy_frame_height': self.deploy_frame_height_input.value,
+            'theme_mode': self.page.theme_mode.name
+        }
+        with open(self.SETTINGS_FILE, 'w') as f:
+            json.dump(settings, f)
+
+    def load_settings(self):
+        try:
+            with open(self.SETTINGS_FILE, 'r') as f:
+                settings = json.load(f)
+                self.selected_project = settings.get('selected_project')
+                self.deploy_project_dropdown.value = self.selected_project
+                self.model_path = settings.get('model_path')
+                self.deploy_settings_history.options.clear()
+                self.find_train_history(self.selected_project)
+                self.deploy_settings_history.value = settings.get('deploy_settings_history')
+                self.deploy_camera_dropdown.value = settings.get('deploy_settings_camera', '0')
+
+                self.deploy_settings_weight.options.clear()
+                self.find_weights(None)
+                self.deploy_settings_weight.value = settings.get('deploy_settings_weight')
+                self.deploy_settings_conf.value = settings.get('deploy_settings_conf', 0.3)
+                self.deploy_settings_iou.value = settings.get('deploy_settings_iou', 0.5)
+                self.deploy_frame_width_input.value = settings.get('deploy_frame_width', '640')
+                self.deploy_frame_height_input.value = settings.get('deploy_frame_height', '480')
+                self.page.theme_mode = ft.ThemeMode[settings.get('theme_mode', 'LIGHT')]
+                self.theme_switch.icon = ft.icons.WB_SUNNY_OUTLINED if self.page.theme_mode == ft.ThemeMode.LIGHT else ft.icons.NIGHTLIGHT_OUTLINED
+
+                self.deploy_project_dropdown.update()
+                self.deploy_settings_history.update()
+                self.deploy_settings_weight.update()
+                self.deploy_model_path.value = self.model_path
+                self.deploy_model_path.update()
+                self.theme_switch.update()
+                self.page.update()
+        except FileNotFoundError:
+            pass
 
     def change_theme(self, e):
         self.page.theme_mode = ft.ThemeMode.DARK if self.page.theme_mode == ft.ThemeMode.LIGHT else ft.ThemeMode.LIGHT
         self.theme_switch.icon = ft.icons.WB_SUNNY_OUTLINED if self.page.theme_mode == ft.ThemeMode.LIGHT else ft.icons.NIGHTLIGHT_OUTLINED
         self.theme_switch.update()
         self.page.update()
+        self.save_settings()
 
     def setup_page(self):
         self.page.views.clear()
@@ -98,6 +150,7 @@ class FAHAI:
         self.model_path = os.path.join(os.getcwd(), 'projects', self.selected_project, 'train', self.deploy_settings_history.value, 'weights', self.deploy_settings_weight.value)
         self.deploy_model_path.value = self.model_path
         self.deploy_model_path.update()
+        self.save_settings()
 
     def start_deploy_camera(self, e):
         self.deploy_progress_bar.visible = True
@@ -161,6 +214,7 @@ class FAHAI:
     def find_weights(self, e):
         project = self.selected_project
         train_name = self.deploy_settings_history.value
+        self.save_settings()
         if project is None or train_name is None:
             return
         try:
@@ -246,6 +300,7 @@ class FAHAI:
         self.selected_project = self.deploy_project_dropdown.value
         self.find_train_history(self.selected_project)
         self.page.update()
+        self.save_settings()
 
     def open_project_folder(self, e):
         project = self.selected_project
