@@ -12,6 +12,8 @@ import function
 import pandas as pd
 from typing import Dict
 import json
+
+
 class FAHAI:
     SETTINGS_FILE = 'settings.json'
 
@@ -35,19 +37,35 @@ class FAHAI:
     def setup_ui(self):
         self.theme_switch = ft.IconButton(ft.icons.WB_SUNNY_OUTLINED, on_click=self.change_theme)
         self.deploy_settings_text = ft.Text("deploy settings")
-        self.deploy_project_dropdown = ft.Dropdown(options=[ft.dropdown.Option(str(p)) for p in self.project_list], expand=True, on_change=self.entry_project)
-        self.deploy_project_folder_button = ft.TextButton("Open project folder", icon=ft.icons.FOLDER_OPEN, on_click=self.open_project_folder, expand=True)
+        self.deploy_project_dropdown = ft.Dropdown(options=[ft.dropdown.Option(str(p)) for p in self.project_list],
+                                                   expand=True, on_change=self.entry_project)
+        self.deploy_project_folder_button = ft.TextButton("Open project folder", icon=ft.icons.FOLDER_OPEN,
+                                                          on_click=self.open_project_folder, expand=True)
         self.deploy_settings_history = ft.Dropdown(on_change=self.find_weights, expand=True)
         self.deploy_settings_weight = ft.Dropdown(expand=True, on_change=self.find_weight_path)
         self.deploy_img_element = ft.Image(src=self.bg_img, fit=ft.ImageFit.COVER, expand=True)
-        self.deploy_camera_dropdown = ft.Dropdown(label="select CAM", options=[ft.dropdown.Option(str(i)) for i in range(5)], value="0", width=200, expand=True)
-        self.deploy_weight_manual_select = ft.TextButton("Import", icon=ft.icons.DRIVE_FOLDER_UPLOAD, on_click=lambda _: self.model_picker.pick_files(allow_multiple=False, allowed_extensions=['pt']), expand=True)
+        self.deploy_camera_dropdown = ft.Dropdown(label="select CAM",
+                                                  options=[ft.dropdown.Option(str(i)) for i in range(5)], value="0",
+                                                  width=200, expand=True)
+        self.deploy_weight_manual_select = ft.TextButton("Import", icon=ft.icons.DRIVE_FOLDER_UPLOAD,
+                                                         on_click=lambda _: self.model_picker.pick_files(
+                                                             allow_multiple=False, allowed_extensions=['pt']),
+                                                         expand=True)
         self.deploy_frame_width_input = ft.TextField(label='width', value="640", width=80, expand=True)
         self.deploy_frame_height_input = ft.TextField(label='height', value="480", width=80, expand=True)
-        self.deploy_settings_start_button = ft.ElevatedButton("Start deploy", icon=ft.icons.PLAY_ARROW_ROUNDED, icon_color='green', on_click=self.start_deploy_camera, expand=True, height=50)
-        self.deploy_settings_stop_button = ft.ElevatedButton("Stop deploy", icon=ft.icons.STOP_ROUNDED, icon_color='red', on_click=self.stop_deploy_camera, expand=True, height=50)
-        self.deploy_settings_upload_button = ft.ElevatedButton("Upload image for predict", icon=ft.icons.UPLOAD, on_click=lambda _: self.image_picker.pick_files(allow_multiple=False, allowed_extensions=['bmp', 'jpg', 'jpeg', 'png']), expand=True)
-        self.deploy_results = ft.Markdown(selectable=True, extension_set="gitHubWeb", code_theme="atom-one-dark", code_style=ft.TextStyle(font_family="Roboto Mono"), expand=True)
+        self.deploy_settings_start_button = ft.ElevatedButton("Start deploy", icon=ft.icons.PLAY_ARROW_ROUNDED,
+                                                              icon_color='green', on_click=self.start_deploy_camera,
+                                                              expand=True, height=50)
+        self.deploy_settings_stop_button = ft.ElevatedButton("Stop deploy", icon=ft.icons.STOP_ROUNDED,
+                                                             icon_color='red', on_click=self.stop_deploy_camera,
+                                                             expand=True, height=50)
+        self.deploy_settings_upload_button = ft.ElevatedButton("Upload image for predict", icon=ft.icons.UPLOAD,
+                                                               on_click=lambda _: self.image_picker.pick_files(
+                                                                   allow_multiple=False,
+                                                                   allowed_extensions=['bmp', 'jpg', 'jpeg', 'png']),
+                                                               expand=True)
+        self.deploy_results = ft.Markdown(selectable=True, extension_set="gitHubWeb", code_theme="atom-one-dark",
+                                          code_style=ft.TextStyle(font_family="Roboto Mono"), expand=True)
         self.deploy_results_text = ft.Text('Results', expand=True)
         self.deploy_model_path = ft.Text(self.model_path, expand=True)
         self.model_picker = ft.FilePicker(on_result=self.on_model_picked)
@@ -61,26 +79,46 @@ class FAHAI:
         self.deploy_page = ft.Row([
             ft.Container(
                 ft.Column([
-                    ft.Card(ft.Column([ft.Row([self.deploy_settings_start_button, self.deploy_settings_stop_button]), ft.Row([self.deploy_progress_bar])])),
-                    ft.Card(ft.Column([ft.Row([ft.Text('Project', width=80), self.deploy_project_dropdown, self.deploy_project_folder_button, ft.Text('', width=10)]), ft.Row([ft.Text('history', width=80), self.deploy_settings_history, ft.Text('', width=10)]), ft.Row([ft.Text('weight', width=80), self.deploy_settings_weight, self.deploy_weight_manual_select, ft.Text('', width=10)]), ft.Row([self.deploy_model_path, ft.Text('', width=10)])])),
-                    ft.Card(ft.Column([ft.Row([self.deploy_results_text]), ft.Row([self.deploy_results])], scroll=ft.ScrollMode.ALWAYS), expand=True)
+                    ft.Card(ft.Column([ft.Row([self.deploy_settings_start_button, self.deploy_settings_stop_button]),
+                                       ft.Row([self.deploy_progress_bar])])),
+                    ft.Card(ft.Column([ft.Row(
+                        [ft.Text('Project', width=80), self.deploy_project_dropdown, self.deploy_project_folder_button,
+                         ft.Text('', width=10)]), ft.Row(
+                        [ft.Text('history', width=80), self.deploy_settings_history, ft.Text('', width=10)]), ft.Row(
+                        [ft.Text('weight', width=80), self.deploy_settings_weight, self.deploy_weight_manual_select,
+                         ft.Text('', width=10)]), ft.Row([self.deploy_model_path, ft.Text('', width=10)])])),
+                    ft.Card(ft.Column([ft.Row([self.deploy_results_text]), ft.Row([self.deploy_results])],
+                                      scroll=ft.ScrollMode.ALWAYS), expand=True)
                 ], scroll=ft.ScrollMode.ALWAYS), expand=3),
-            ft.Container(ft.Column([self.deploy_img_element], alignment=ft.MainAxisAlignment.SPACE_AROUND, horizontal_alignment=ft.CrossAxisAlignment.CENTER), expand=7),
+            ft.Container(ft.Column([self.deploy_img_element], alignment=ft.MainAxisAlignment.SPACE_AROUND,
+                                   horizontal_alignment=ft.CrossAxisAlignment.CENTER), expand=7),
         ])
 
         self.settings_page = ft.Container(ft.Row([
-            ft.Container(ft.Column([ft.Card(ft.Column([ft.Row([ft.Text('Input', expand=True)]), ft.Row([self.deploy_settings_upload_button]), ft.Row([ft.Text('select CAM', width=80), self.deploy_camera_dropdown, ft.Text('', width=10)])]), expand=1), ft.Card(ft.Column([ft.Row([ft.Text('Formula', expand=True)]), ft.Row([ft.Text('imgsz', width=80), self.deploy_frame_width_input, ft.Text('X'), self.deploy_frame_height_input, ft.Text('', width=10)]), ft.Row([ft.Text('Confidence', width=80), self.deploy_settings_conf]), ft.Row([ft.Text('IOU', width=80), self.deploy_settings_iou])]), expand=1)]), expand=1),
-            ft.Container(ft.Column([ft.Card(ft.Column([ft.Row([ft.Text('Rule', expand=True)])]), expand=1), ft.Card(ft.Column([ft.Row([ft.Text('OUTPUT', expand=True)])]), expand=1)]), expand=1),
+            ft.Container(ft.Column([ft.Card(ft.Column(
+                [ft.Row([ft.Text('Input', expand=True)]), ft.Row([self.deploy_settings_upload_button]),
+                 ft.Row([ft.Text('select CAM', width=80), self.deploy_camera_dropdown, ft.Text('', width=10)])]),
+                expand=1), ft.Card(ft.Column([ft.Row([ft.Text('Formula', expand=True)]),
+                                              ft.Row([ft.Text('imgsz', width=80),
+                                                      self.deploy_frame_width_input,
+                                                      ft.Text('X'),
+                                                      self.deploy_frame_height_input,
+                                                      ft.Text('', width=10)]), ft.Row(
+                    [ft.Text('Confidence', width=80), self.deploy_settings_conf]), ft.Row(
+                    [ft.Text('IOU', width=80), self.deploy_settings_iou])]), expand=1)]), expand=1),
+            ft.Container(ft.Column([ft.Card(ft.Column([ft.Row([ft.Text('Rule', expand=True)])]), expand=1),
+                                    ft.Card(ft.Column([ft.Row([ft.Text('OUTPUT', expand=True)])]), expand=1)]),
+                         expand=1),
         ]))
 
         self.t = ft.Tabs(selected_index=0, animation_duration=300, tabs=[
             ft.Tab(text="deploy", icon=ft.icons.FACT_CHECK, content=self.deploy_page),
             ft.Tab(text='Settings', icon=ft.icons.SETTINGS, content=self.settings_page)
-        ], expand=1,on_change=self.save_settings)
+        ], expand=1, on_change=self.save_settings)
 
         self.setup_page()
 
-    def save_settings(self,e=None):
+    def save_settings(self, e=None):
         settings = {
             'selected_project': self.selected_project,
             'model_path': self.model_path,
@@ -137,7 +175,13 @@ class FAHAI:
 
     def setup_page(self):
         self.page.views.clear()
-        self.page.views.append(ft.View("/", [ft.AppBar(leading=ft.Icon(ft.icons.CATCHING_POKEMON), adaptive=True, title=ft.Text('Welcome to FAHAI deploy tool !'), center_title=False, bgcolor=ft.colors.SURFACE_VARIANT, actions=[self.theme_switch, ft.IconButton(ft.icons.EXIT_TO_APP, on_click=lambda e: self.page.window_close())]), self.t]))
+        self.page.views.append(ft.View("/", [ft.AppBar(leading=ft.Icon(ft.icons.CATCHING_POKEMON), adaptive=True,
+                                                       title=ft.Text('Welcome to FAHAI deploy tool !'),
+                                                       center_title=False, bgcolor=ft.colors.SURFACE_VARIANT,
+                                                       actions=[self.theme_switch, ft.IconButton(ft.icons.EXIT_TO_APP,
+                                                                                                 on_click=lambda
+                                                                                                     e: self.page.window_close())]),
+                                             self.t]))
         self.page.update()
 
     def on_model_picked(self, e: ft.FilePickerResultEvent):
@@ -147,7 +191,8 @@ class FAHAI:
             self.deploy_model_path.update()
 
     def find_weight_path(self, e):
-        self.model_path = os.path.join(os.getcwd(), 'projects', self.selected_project, 'train', self.deploy_settings_history.value, 'weights', self.deploy_settings_weight.value)
+        self.model_path = os.path.join(os.getcwd(), 'projects', self.selected_project, 'train',
+                                       self.deploy_settings_history.value, 'weights', self.deploy_settings_weight.value)
         self.deploy_model_path.value = self.model_path
         self.deploy_model_path.update()
         self.save_settings()
@@ -164,7 +209,8 @@ class FAHAI:
             self.deploy_progress_bar.visible = False
             self.deploy_progress_bar.update()
             return
-        self.camera_thread_instance = threading.Thread(target=self.camera_thread, args=(camera_index, self.deploy_img_element, predict_on, model_path))
+        self.camera_thread_instance = threading.Thread(target=self.camera_thread, args=(
+            camera_index, self.deploy_img_element, predict_on, model_path))
         self.camera_thread_instance.do_run = True
         self.camera_thread_instance.start()
 
@@ -316,6 +362,7 @@ class FAHAI:
             os.system(f'explorer {project_path}')
         self.snack_message(f'Open project folder: {project_path}', 'green')
 
+
 def main(page: ft.Page):
     page.title = "BOSCH_HzP_AI_Platform"
     page.padding = 0
@@ -327,6 +374,7 @@ def main(page: ft.Page):
     page.bgcolor = ft.colors.BLUE_GREY_200
     page.window_maximized = True
     app = FAHAI(page)
+
 
 if __name__ == "__main__":
     ft.app(target=main)
