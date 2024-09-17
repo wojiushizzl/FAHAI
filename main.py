@@ -59,8 +59,8 @@ class FAHAI:
             run_spacing=5,
         )
 
-        self.bg_img=os.path.join(os.getcwd(),'component','bosch-company-equipment-logo-wallpaper.jpg')
         # components for datasets_page
+        self.bg_img=os.path.join(os.getcwd(),'component','bosch-company-equipment-logo-wallpaper.jpg')
         self.img_element = ft.Image(src=self.bg_img, fit=ft.ImageFit.COVER,
                                     expand=True)
         self.text_element = ft.Text("Press START to start camera")
@@ -859,6 +859,22 @@ class FAHAI:
         self.page.update()
         self.setup_page()
 
+    def open_project_folder(self,e):
+        project = e.control.data
+        project_path = os.path.join(os.getcwd(), 'projects', project)
+
+        # 判断当前操作系统
+        import platform
+
+        current_os = platform.system()
+        print(f"当前操作系统: {current_os}")
+
+
+        # os.system(f'explorer {project_path}')# windows
+        os.system(f'open {project_path}')# mac
+
+        self.snack_message(f'Open project folder: {project_path}', 'green')
+
     def delete_project(self, e):
         card_title = e.control.data
         message = function.delete_project(card_title)
@@ -877,6 +893,7 @@ class FAHAI:
                         ),
                         ft.Row(
                             [
+                                ft.TextButton('Folder',icon=ft.icons.FOLDER,data=text,on_click=self.open_project_folder),
                                 ft.TextButton(action1, icon=ft.icons.SETTINGS, data=text, on_click=self.entry_project),
                                 ft.TextButton(action2, icon=ft.icons.DELETE, data=text, on_click=self.delete_project)
                             ],
