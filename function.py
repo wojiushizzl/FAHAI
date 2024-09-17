@@ -46,9 +46,9 @@ def get_project_folders():
 
 
 def get_folder_info(folder_path):
-    # 获取文件夹的创建时间和修改时间
-    create_time = time.ctime(os.path.getctime(folder_path))
-    modify_time = time.ctime(os.path.getmtime(folder_path))
+    # 获取文件夹的创建时间和修改时间, 并转换为短日期格式
+    create_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getctime(folder_path)))
+    modify_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getmtime(folder_path)))
 
     # 获取文件夹的树结构
     tree_structure = []

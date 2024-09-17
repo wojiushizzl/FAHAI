@@ -865,13 +865,13 @@ class FAHAI:
 
         # 判断当前操作系统
         import platform
-
         current_os = platform.system()
         print(f"当前操作系统: {current_os}")
-
-
         # os.system(f'explorer {project_path}')# windows
-        os.system(f'open {project_path}')# mac
+        if current_os == 'Darwin':
+            os.system(f'open {project_path}')# mac Darwin
+        else:
+            os.system(f'explorer {project_path}')# windows
 
         self.snack_message(f'Open project folder: {project_path}', 'green')
 
@@ -894,7 +894,7 @@ class FAHAI:
                         ft.Row(
                             [
                                 ft.TextButton('Folder',icon=ft.icons.FOLDER,data=text,on_click=self.open_project_folder),
-                                ft.TextButton(action1, icon=ft.icons.SETTINGS, data=text, on_click=self.entry_project),
+                                # ft.TextButton(action1, icon=ft.icons.SETTINGS, data=text, on_click=self.entry_project),
                                 ft.TextButton(action2, icon=ft.icons.DELETE, data=text, on_click=self.delete_project)
                             ],
                             alignment=ft.MainAxisAlignment.END,
@@ -904,6 +904,8 @@ class FAHAI:
                 width=size[0],
                 height=size[0],
                 padding=size[1],
+                data=text,
+                on_click=self.entry_project
             )
         )
 
@@ -921,7 +923,7 @@ class FAHAI:
         for p in projects_list:
             p_path = os.path.join(os.getcwd(), 'projects', p)
             create_time, modify_time, _ = function.get_folder_info(p_path)
-            description = f'create time :\n{create_time}\nmodify time:\n {modify_time}\n'
+            description = f'create time :\n{create_time}\nmodify time:\n{modify_time}\n'
             self.images.controls.append(
                 self.project_card(icon=ft.icons.AUTO_AWESOME, text=p, description=description, action1='Select',
                                   action2='Delete')
