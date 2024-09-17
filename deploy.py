@@ -11,7 +11,6 @@ import flet as ft
 import function
 import pandas as pd
 from typing import Dict
-import yolov8_train
 
 class FAHAI:
     def __init__(self, page: ft.Page):
