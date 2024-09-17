@@ -15,7 +15,7 @@ cache: false
 device: null
 workers: 8
 project: /Users/mse6hzp/Documents/GitHub/FAHAI/projects/ZZL_Detect/train
-name: train
+name: train3
 exist_ok: true
 pretrained: true
 optimizer: auto
@@ -104,4 +104,4 @@ erasing: 0.4
 crop_fraction: 1.0
 cfg: null
 tracker: botsort.yaml
-save_dir: /Users/mse6hzp/Documents/GitHub/FAHAI/projects/ZZL_Detect/train/train
+save_dir: /Users/mse6hzp/Documents/GitHub/FAHAI/projects/ZZL_Detect/train/train3

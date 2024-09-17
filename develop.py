@@ -198,7 +198,7 @@ class FAHAI:
             code_style=ft.TextStyle(font_family="Roboto Mono"),
             expand=True)
         self.validate_results_text = ft.Text('Results', expand=True)
-        self.validate_model_path = ft.Text(self.model_path, expand=True)
+        self.validate_model_path = ft.Text(self.model_path,italic=True,selectable=True, expand=True)
         self.model_picker = ft.FilePicker(on_result=self.on_model_picked)
         self.page.overlay.append(self.model_picker)  # FilePicker 需要添加到 overlay
         self.image_picker = ft.FilePicker(on_result=self.upload_img_predict)
@@ -297,7 +297,7 @@ class FAHAI:
                                     self.validate_settings_delete, ft.Text('', width=10)]),
                             ft.Row([ft.Text('weight', width=80), self.validate_settings_weight,
                                     self.validate_weight_manual_select, ft.Text('', width=10)]),
-                            ft.Row([self.validate_model_path, ft.Text('', width=10)]),
+                            ft.Row([ft.Text('selected .pt',width=80),self.validate_model_path, ft.Text('', width=10)]),
                             ft.Row([ft.Text('select CAM', width=80), self.validate_camera_dropdown,
                                     ft.Text('', width=10)]),
                             ft.Row([ft.Text('imgsz', width=80), self.validate_frame_width_input, ft.Text('X'),
@@ -533,6 +533,7 @@ class FAHAI:
     def update_train_progress(self, e):
         while self.train_settings_progress_ring.visible == True:
             time.sleep(10)
+            self.find_train_history(self.selected_project)
             self.train_settings_history.value = self.train_settings_train_name.value
             self.train_settings_history.update()
             self.update_result_table(e)
