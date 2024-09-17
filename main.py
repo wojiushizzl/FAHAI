@@ -45,6 +45,9 @@ class FAHAI:
             options=[
                 ft.dropdown.Option("Detect"),
                 ft.dropdown.Option("Segment"),
+                ft.dropdown.Option("Classify",disabled=True),
+                ft.dropdown.Option("Pose",disabled=True),
+                ft.dropdown.Option("OBB",disabled=True),
             ],
         )
         self.images = ft.GridView(
