@@ -20,13 +20,9 @@ class FAHAI:
     def __init__(self, page: ft.Page):
         self.page = page
         self.selected_project = None
-        # self.images_count = None
-        # self.labels_count = None
-        # self.classfile_exist = None
         self.camera_thread_instance = None
-        self.prog_bars: Dict[str, ft.ProgressRing] = {}
+        self.prog_bars = {}
         self.files = ft.Ref[ft.Column]()
-        # self.target_directory = None
         self.cap = None
         self.model_path = None
         self.bg_img = os.path.join(os.getcwd(), 'component', 'bosch-company-equipment-logo-wallpaper.jpg')
@@ -67,7 +63,7 @@ class FAHAI:
         self.deploy_results = ft.Markdown(selectable=True, extension_set="gitHubWeb", code_theme="atom-one-dark",
                                           code_style=ft.TextStyle(font_family="Roboto Mono"), expand=True)
         self.deploy_results_text = ft.Text('Results', expand=True)
-        self.deploy_model_path = ft.Text(self.model_path, expand=True)
+        self.deploy_model_path = ft.Text(self.model_path, italic=True,expand=True)
         self.model_picker = ft.FilePicker(on_result=self.on_model_picked)
         self.page.overlay.append(self.model_picker)
         self.image_picker = ft.FilePicker(on_result=self.upload_img_predict)
@@ -81,12 +77,9 @@ class FAHAI:
                 ft.Column([
                     ft.Card(ft.Column([ft.Row([self.deploy_settings_start_button, self.deploy_settings_stop_button]),
                                        ft.Row([self.deploy_progress_bar])])),
-                    ft.Card(ft.Column([ft.Row(
-                        [ft.Text('Project', width=80), self.deploy_project_dropdown, self.deploy_project_folder_button,
-                         ft.Text('', width=10)]), ft.Row(
-                        [ft.Text('history', width=80), self.deploy_settings_history, ft.Text('', width=10)]), ft.Row(
-                        [ft.Text('weight', width=80), self.deploy_settings_weight, self.deploy_weight_manual_select,
-                         ft.Text('', width=10)]), ft.Row([self.deploy_model_path, ft.Text('', width=10)])])),
+                    ft.Card(ft.Column([
+                        # ft.Row([ft.Text('history', width=80), self.deploy_settings_history, ft.Text('', width=10)]),
+                    ])),
                     ft.Card(ft.Column([ft.Row([self.deploy_results_text]), ft.Row([self.deploy_results])],
                                       scroll=ft.ScrollMode.ALWAYS), expand=True)
                 ], scroll=ft.ScrollMode.ALWAYS), expand=3),
@@ -94,22 +87,66 @@ class FAHAI:
                                    horizontal_alignment=ft.CrossAxisAlignment.CENTER), expand=7),
         ])
 
-        self.settings_page = ft.Container(ft.Row([
-            ft.Container(ft.Column([ft.Card(ft.Column(
-                [ft.Row([ft.Text('Input', expand=True)]), ft.Row([self.deploy_settings_upload_button]),
-                 ft.Row([ft.Text('select CAM', width=80), self.deploy_camera_dropdown, ft.Text('', width=10)])]),
-                expand=1), ft.Card(ft.Column([ft.Row([ft.Text('Formula', expand=True)]),
-                                              ft.Row([ft.Text('imgsz', width=80),
-                                                      self.deploy_frame_width_input,
-                                                      ft.Text('X'),
-                                                      self.deploy_frame_height_input,
-                                                      ft.Text('', width=10)]), ft.Row(
-                    [ft.Text('Confidence', width=80), self.deploy_settings_conf]), ft.Row(
-                    [ft.Text('IOU', width=80), self.deploy_settings_iou])]), expand=1)]), expand=1),
-            ft.Container(ft.Column([ft.Card(ft.Column([ft.Row([ft.Text('Rule', expand=True)])]), expand=1),
-                                    ft.Card(ft.Column([ft.Row([ft.Text('OUTPUT', expand=True)])]), expand=1)]),
-                         expand=1),
-        ]))
+        self.settings_page = ft.Column([
+            ft.ExpansionTile(
+                title=ft.Text("Project Settings"),
+                # subtitle=ft.Text("Deploy settings"),
+                initially_expanded=True,
+                controls=[
+                    ft.Card(
+                        ft.Column([
+                            ft.Row([ft.Text('Project', width=80), self.deploy_project_dropdown,
+                                    self.deploy_project_folder_button, ft.Text('', width=10)]),
+                            ft.Row([ft.Text('history', width=80), self.deploy_settings_history, ft.Text('', width=10)]),
+                            ft.Row([ft.Text('weight', width=80), self.deploy_settings_weight, self.deploy_weight_manual_select,
+                                    ft.Text('', width=10)]),
+                            ft.Row([ft.Text('model path', width=80), self.deploy_model_path, ft.Text('', width=10)]),
+                        ])
+                    )
+                ]
+            ),
+            ft.ExpansionTile(
+                title=ft.Text("Input Settings"),
+                # subtitle=ft.Text("Deploy settings"),
+                initially_expanded=True,
+                controls=[
+                    ft.Card(
+                        ft.Column([
+                            ft.Row([ft.Text('CAM', width=80), self.deploy_camera_dropdown, ft.Text('', width=10)]),
+                            ft.Row([ft.Text('imgsz', width=80), self.deploy_frame_width_input,
+                                    ft.Text('X'), self.deploy_frame_height_input, ft.Text('', width=10)]),
+                            ft.Row([ft.Text('Confidence', width=80), self.deploy_settings_conf, ft.Text('', width=10)]),
+                            ft.Row([ft.Text('IOU', width=80), self.deploy_settings_iou, ft.Text('', width=10)]),
+                        ])
+                    )
+                ]
+            ),
+            ft.ExpansionTile(
+                title=ft.Text("Logic Settings"),
+                # subtitle=ft.Text("Deploy settings"),
+                initially_expanded=True,
+                controls=[
+                    ft.Card(
+                        ft.Column([
+                            # ft.Row([ft.Text('CAM', width=80), self.deploy_camera_dropdown, ft.Text('', width=10)]),
+                        ])
+                    )
+                ]
+            ),
+            ft.ExpansionTile(
+                title=ft.Text("Output Settings"),
+                # subtitle=ft.Text("Deploy settings"),
+                initially_expanded=True,
+                controls=[
+                    ft.Card(
+                        ft.Column([
+                            # ft.Row([ft.Text('CAM', width=80), self.deploy_camera_dropdown, ft.Text('', width=10)]),
+                        ])
+                    )
+                ]
+            ),
+        ],spacing=0)
+
 
         self.t = ft.Tabs(selected_index=0, animation_duration=300, tabs=[
             ft.Tab(text="deploy", icon=ft.icons.FACT_CHECK, content=self.deploy_page),
@@ -164,7 +201,7 @@ class FAHAI:
                 self.theme_switch.update()
                 self.page.update()
         except FileNotFoundError:
-            pass
+            self.snack_message('No settings file found', 'red')
 
     def change_theme(self, e):
         self.page.theme_mode = ft.ThemeMode.DARK if self.page.theme_mode == ft.ThemeMode.LIGHT else ft.ThemeMode.LIGHT
@@ -377,4 +414,4 @@ def main(page: ft.Page):
 
 
 if __name__ == "__main__":
-    ft.app(target=main)
+    ft.app(target=main,assets_dir='assets')
