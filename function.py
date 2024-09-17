@@ -212,3 +212,9 @@ def delete_train(project, train_name):
         message = (f"文件夹 '{folder_path}' 不存在")
     return message
 
+
+def get_project_list():
+    projects_path = os.path.join(os.getcwd(), 'projects')
+    if os.path.exists(projects_path):
+        return [f for f in os.listdir(projects_path) if os.path.isdir(os.path.join(projects_path, f))]
+    return []
