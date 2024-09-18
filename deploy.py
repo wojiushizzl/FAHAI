@@ -25,7 +25,9 @@ class FAHAI:
         self.files = ft.Ref[ft.Column]()
         self.cap = None
         self.model_path = None
-        self.bg_img = os.path.join(os.getcwd(), 'component', 'bosch-company-equipment-logo-wallpaper.jpg')
+        # self.bg_img = os.path.join(os.getcwd(), 'component', 'bosch-company-equipment-logo-wallpaper.jpg')
+        self.bg_img = os.path.join(os.getcwd(), 'component', 'siri.gif')
+
         self.project_list = function.get_project_list()
         self.setup_ui()
         self.load_settings()

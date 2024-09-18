@@ -13,11 +13,6 @@ from typing import Dict
 import yolov8_train
 import pandas as pd
 
-'''TODO
-label-studio 项目启动 命令优化
-
-'''
-
 
 class FAHAI:
     def __init__(self, page: ft.Page):
@@ -61,7 +56,9 @@ class FAHAI:
         )
 
         # components for datasets_page
-        self.bg_img = os.path.join(os.getcwd(), 'component', 'bosch-company-equipment-logo-wallpaper.jpg')
+        # self.bg_img = os.path.join(os.getcwd(), 'component', 'bosch-company-equipment-logo-wallpaper.jpg')
+        self.bg_img = os.path.join(os.getcwd(), 'component', 'siri.gif')
+
         self.img_element = ft.Image(src=self.bg_img, fit=ft.ImageFit.COVER,
                                     expand=True)
         self.text_element = ft.Text("Press START to start camera")
@@ -94,6 +91,12 @@ class FAHAI:
         self.webview = ft.WebView(url="http://localhost:8088/projects/?page=1")
         self.datasets_page_porgress_ring = ft.ProgressRing(width=20, height=20, visible=False)
         self.datasets_page_labelstudio_ring = ft.ProgressRing(width=20, height=20, visible=False)
+        self.datasets_page_labelstudio_port = ft.TextField(label='port', value="8088", width=100, expand=True)
+        self.datasets_page_labelstudio_link = ft.Text(spans=[ft.TextSpan(
+            "click here open label-studio",
+            ft.TextStyle(decoration=ft.TextDecoration.UNDERLINE),
+            url="http://localhost:8088/projects/?page=1",
+        ), ], visible=False,expand=True)
 
         # components for train_page
         self.train_settings_text = ft.Text("Train settings")
@@ -198,7 +201,7 @@ class FAHAI:
             code_style=ft.TextStyle(font_family="Roboto Mono"),
             expand=True)
         self.validate_results_text = ft.Text('Results', expand=True)
-        self.validate_model_path = ft.Text(self.model_path,italic=True,selectable=True, expand=True)
+        self.validate_model_path = ft.Text(self.model_path, italic=True, selectable=True, expand=True)
         self.model_picker = ft.FilePicker(on_result=self.on_model_picked)
         self.page.overlay.append(self.model_picker)  # FilePicker 需要添加到 overlay
         self.image_picker = ft.FilePicker(on_result=self.upload_img_predict)
@@ -215,8 +218,11 @@ class FAHAI:
                         self.images_card,
                         self.labels_card,
                         self.classfile_card,
-                        ft.Container(self.upload_zip_button, expand=1),
-                        ft.Container(ft.Row([self.label_studio_button, self.datasets_page_labelstudio_ring]), expand=1),
+                        ft.Row([self.upload_zip_button], expand=1),
+                        ft.Container(ft.Row([self.label_studio_button, self.datasets_page_labelstudio_ring,
+                                             self.datasets_page_labelstudio_port]), expand=1),
+                        ft.Row([self.datasets_page_labelstudio_link], expand=1),
+
                         ft.Column(ref=self.files, visible=False)
                     ]), expand=2),
             ft.Container(
@@ -297,7 +303,8 @@ class FAHAI:
                                     self.validate_settings_delete, ft.Text('', width=10)]),
                             ft.Row([ft.Text('weight', width=80), self.validate_settings_weight,
                                     self.validate_weight_manual_select, ft.Text('', width=10)]),
-                            ft.Row([ft.Text('selected .pt',width=80),self.validate_model_path, ft.Text('', width=10)]),
+                            ft.Row(
+                                [ft.Text('selected .pt', width=80), self.validate_model_path, ft.Text('', width=10)]),
                             ft.Row([ft.Text('select CAM', width=80), self.validate_camera_dropdown,
                                     ft.Text('', width=10)]),
                             ft.Row([ft.Text('imgsz', width=80), self.validate_frame_width_input, ft.Text('X'),
@@ -671,19 +678,32 @@ class FAHAI:
 
     def open_label_studio(self, e):
         # 启动 Label Studio，指定端口
-        port = 8088
+        port = int(self.datasets_page_labelstudio_port.value)
         # 构建命令字符串，激活conda环境并运行label-studio
         self.datasets_page_labelstudio_ring.visible = True
+        self.datasets_page_labelstudio_ring.update()
         label_studio_thread = threading.Thread(target=self.label_studio, args=(port,))
         label_studio_thread.start()
-
+        self.datasets_page_labelstudio_link.visible =True
+        self.datasets_page_labelstudio_link.spans.clear()
+        self.datasets_page_labelstudio_link.spans.append(ft.TextSpan(
+            f"localhost:{port}",
+            ft.TextStyle(decoration=ft.TextDecoration.UNDERLINE),
+            url=f'http://localhost:{port}/projects/?page=1'
+        ))
+        self.datasets_page_labelstudio_link.update()
+        self.datasets_page_labelstudio_ring.visible = False
+        self.datasets_page_labelstudio_ring.update()
     def label_studio(self, port):
         try:
             # "label-studio init test_project"   # 初始化项目
             # "label-studio start test_project --sampling sequential" # 启动项目
-            subprocess.run(['label-studio', 'start', '--port', str(port)], check=True)  # 启动label studio
+            subprocess.run(['label-studio', 'start', '--port', str(port),
+                            '--username', 'admin@localhost', '--password', 'admin123456',
+                            ], check=True)  # 启动label studio
 
-            messagge = f'Load label Studio success at {port}'
+
+            messagge = f'Load label Studio success at localhost:{port}'
             color = 'green'
         except subprocess.CalledProcessError as e:
             self.datasets_page_labelstudio_ring.visible = False
@@ -694,6 +714,7 @@ class FAHAI:
             messagge = "Label Studio is not installed or not found in PATH."
             color = 'red'
         self.snack_message(messagge, color)
+        self.datasets_page_labelstudio_ring.update()
 
     def update_datasets_card(self, e):
         self.images_card.content = self.dataset_card(ft.icons.IMAGE, 'images', self.images_count)
@@ -967,8 +988,8 @@ def main(page: ft.Page):
         "Roboto Mono": "RobotoMono-VariableFont_wght.ttf",
     }
     # page.fonts = {"Pacifico": "Pacifico-Regular.ttf"}
-    page.window_frameless = True
-    page.window_resizable = False
+    # page.window_frameless = True
+    # page.window_resizable = False
     page.bgcolor = ft.colors.BLUE_GREY_200
     page.window_maximized = True
     app = FAHAI(page)
