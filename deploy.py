@@ -34,7 +34,9 @@ class FAHAI:
 
     def setup_ui(self):
         self.theme_switch = ft.IconButton(ft.icons.WB_SUNNY_OUTLINED, on_click=self.change_theme)
-        self.deploy_settings_text = ft.Text("deploy settings")
+        self.deploy_choice_dropdown = ft.Dropdown(expand=True,on_change=self.load_settings)
+        self.deploy_add_choice_button = ft.IconButton(ft.icons.ADD, on_click=self.add_choice, width=60)
+        self.deploy_remove_choice_button = ft.IconButton(ft.icons.DELETE, on_click=self.remove_choice, width=60)
         self.deploy_project_dropdown = ft.Dropdown(options=[ft.dropdown.Option(str(p)) for p in self.project_list],
                                                    expand=True, on_change=self.entry_project)
         self.deploy_project_folder_button = ft.TextButton("Open project folder", icon=ft.icons.FOLDER_OPEN,
@@ -77,6 +79,7 @@ class FAHAI:
         self.deploy_page = ft.Row([
             ft.Container(
                 ft.Column([
+                    ft.Card(ft.Column([ft.Row([self.deploy_choice_dropdown, self.deploy_add_choice_button,self.deploy_remove_choice_button])])),
                     ft.Card(ft.Column([ft.Row([self.deploy_settings_start_button, self.deploy_settings_stop_button]),
                                        ft.Row([self.deploy_progress_bar])])),
                     ft.Card(ft.Column([
@@ -157,6 +160,38 @@ class FAHAI:
 
         self.setup_page()
 
+    def remove_choice(self, e):
+            # 删除选中的choice
+            # self.deploy_choice_dropdown.options.remove(ft.dropdown.Option(self.deploy_choice_dropdown.value))
+            # self.deploy_choice_dropdown.update()
+            # self.snack_message('Remove choice success', 'green')
+        self.snack_message('Remove choice is not supported', 'red')
+    def add_choice(self, e):
+        def on_dialog_submit(d):
+            new_choice = d.content.value
+            if new_choice:
+                self.deploy_choice_dropdown.options.append(ft.dropdown.Option(new_choice))
+                print(self.deploy_choice_dropdown.options)
+                self.deploy_choice_dropdown.update()
+
+            d.open = False
+            d.update()
+            self.snack_message(f'Add choice{new_choice} success', 'green')
+        def on_dialog_cancel(d):
+            d.open = False
+            d.update()
+
+        dialog = ft.AlertDialog(
+            title=ft.Text("Add Choice"),
+            content=ft.TextField(label="Enter choice"),
+            actions=[
+                ft.TextButton("Submit", on_click=lambda _: on_dialog_submit(dialog)),
+                ft.TextButton("Cancel", on_click=lambda _: on_dialog_cancel(dialog))
+            ]
+        )
+        self.page.dialog = dialog
+        dialog.open = True
+        self.page.update()
     def save_settings(self, e=None):
         settings = {
             'selected_project': self.selected_project,
@@ -173,7 +208,7 @@ class FAHAI:
         with open(self.SETTINGS_FILE, 'w') as f:
             json.dump(settings, f)
 
-    def load_settings(self):
+    def load_settings(self,e=None):
         try:
             with open(self.SETTINGS_FILE, 'r') as f:
                 settings = json.load(f)
@@ -408,8 +443,8 @@ def main(page: ft.Page):
     page.theme = ft.theme.Theme(font_family="Verdana", color_scheme_seed='blue')
     page.theme.page_transitions.windows = "cupertino"
     page.fonts = {"Roboto Mono": "RobotoMono-VariableFont_wght.ttf"}
-    page.window_frameless = True
-    page.window_resizable = False
+    # page.window_frameless = True
+    # page.window_resizable = False
     page.bgcolor = ft.colors.BLUE_GREY_200
     page.window_maximized = True
     app = FAHAI(page)
