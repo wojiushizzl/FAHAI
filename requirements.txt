@@ -2,3 +2,9 @@ flet==0.22.*
 ultralytics==8.1.*
 label-studio==1.11.*
 tabulate==0.9.0
+ruamel.yaml==0.18.6
+
+
+# if you run in unbuntu 20.04 or above, you need to install libmpv-dev and libmpv1
+# sudo sudo apt update
+# sudo apt install libmpv-dev libmpv1
