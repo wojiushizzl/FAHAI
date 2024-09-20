@@ -1,4 +1,7 @@
 import subprocess
+import sys
+from email.policy import default
+
 import flet as ft
 import function
 import os
@@ -27,7 +30,8 @@ class FAHAI:
         self.target_directory = None
         self.cap = None
         self.model_path = None
-
+        self.data_buf = None
+        self.stOutFrame=None
         self.setup_ui()
 
     def setup_ui(self):
@@ -97,7 +101,16 @@ class FAHAI:
             "click here open label-studio",
             ft.TextStyle(decoration=ft.TextDecoration.UNDERLINE),
             url="http://localhost:8088/projects/?page=1",
-        ), ], visible=False,expand=True)
+        ), ], visible=False, expand=True)
+        self.datasets_page_CAM_type=ft.RadioGroup(
+            content=ft.Column(
+                [
+                    ft.Radio(value="hikrobotic CAM", label="hikrobotic CAM",fill_color=ft.colors.GREEN),
+                    ft.Radio(value="CV CAM", label="CV CAM", fill_color=ft.colors.GREEN),
+                ]
+            )
+        )
+
 
         # components for train_page
         self.train_settings_text = ft.Text("Train settings")
@@ -238,6 +251,7 @@ class FAHAI:
                         ft.Row([self.start_button, self.stop_button], expand=True),
                         ft.Row([self.datasets_page_porgress_ring, self.text_element], expand=True),
                         ft.Row([self.predict_on], expand=True),
+                        ft.Row([self.datasets_page_CAM_type]),
                         ft.Row([self.camera_dropdown], expand=True),
                         ft.Row([self.frame_width_input, ft.Text("x", width=20), self.frame_height_input], expand=True),
                         ft.Row([self.take_photo_button], expand=True),
@@ -306,6 +320,7 @@ class FAHAI:
                                     self.validate_weight_manual_select, ft.Text('', width=10)]),
                             ft.Row(
                                 [ft.Text('selected .pt', width=80), self.validate_model_path, ft.Text('', width=10)]),
+                            ft.Row([self.datasets_page_CAM_type,ft.Text('', width=10)]),
                             ft.Row([ft.Text('select CAM', width=80), self.validate_camera_dropdown,
                                     ft.Text('', width=10)]),
                             ft.Row([ft.Text('imgsz', width=80), self.validate_frame_width_input, ft.Text('X'),
@@ -435,11 +450,15 @@ class FAHAI:
         self.camera_thread_instance.do_run = True
         self.camera_thread_instance.start()
 
-    def stop_validate_camera(self, e):
+    def stop_validate_camera(self, e=None):
         if self.camera_thread_instance:
             self.camera_thread_instance.do_run = False
             self.camera_thread_instance.join()
             self.snack_message('CAM is stopped', 'green')
+            self.datasets_page_porgress_ring.visible = False
+            self.validate_progress_bar.visible = False
+            self.datasets_page_porgress_ring.update()
+            self.validate_progress_bar.update()
             self.validate_img_element.src_base64 = ""
             self.page.update()
 
@@ -635,6 +654,7 @@ class FAHAI:
     def create_develop_content(self):
         self.make_projects_gridview()
         self.page.update()
+
         return self.t
 
     def file_picker_result(self, e: ft.FilePickerResultEvent):
@@ -658,7 +678,6 @@ class FAHAI:
                     self.snack_message(f"复制文件 {f.name} 失败: {ex}", 'red')
         self.count_datasets(self.selected_project)
         self.update_datasets_card(e)
-
 
     def upload_zip(self, e):
         self.snack_message('upload zip, this function is not ready', 'red')
@@ -686,7 +705,7 @@ class FAHAI:
         self.datasets_page_labelstudio_ring.update()
         label_studio_thread = threading.Thread(target=self.label_studio, args=(port,))
         label_studio_thread.start()
-        self.datasets_page_labelstudio_link.visible =True
+        self.datasets_page_labelstudio_link.visible = True
         self.datasets_page_labelstudio_link.spans.clear()
         self.datasets_page_labelstudio_link.spans.append(ft.TextSpan(
             f"localhost:{port}",
@@ -696,6 +715,7 @@ class FAHAI:
         self.datasets_page_labelstudio_link.update()
         self.datasets_page_labelstudio_ring.visible = False
         self.datasets_page_labelstudio_ring.update()
+
     def label_studio(self, port):
         try:
             # "label-studio init test_project"   # 初始化项目
@@ -703,7 +723,6 @@ class FAHAI:
             subprocess.run(['label-studio', 'start', '--port', str(port),
                             '--username', 'admin@localhost', '--password', 'admin123456',
                             ], check=True)  # 启动label studio
-
 
             messagge = f'Load label Studio success at localhost:{port}'
             color = 'green'
@@ -759,10 +778,16 @@ class FAHAI:
             if not self.selected_project:
                 self.snack_message('Please select a project first', 'red')
                 return
-            if not self.cap.isOpened():
+            if not self.camera_thread_instance.do_run ==True:
                 self.snack_message(f'摄像头未启动 {e}', 'red')
                 return
-            ret, frame = self.cap.read()
+            if self.datasets_page_CAM_type.value == "hikrobotic CAM":
+                sys.path.append(os.path.join(os.getcwd(), 'hik_CAM'))
+                from hik_CAM.getFrame import start_cam, exit_cam, get_frame
+                ret, frame = get_frame(self.cap,self.stOutFrame)
+            elif self.datasets_page_CAM_type.value == "CV CAM":
+                ret, frame = self.cap.read()
+
             frame = cv2.resize(frame, (int(self.frame_width_input.value), int(self.frame_height_input.value)))
             img_path = os.path.join(os.getcwd(), 'projects', self.selected_project, 'datasets', 'images')
             img_name = function.get_uuid()
@@ -802,26 +827,23 @@ class FAHAI:
         self.validate_progress_bar.update()
         self.page.update()
 
-        self.cap = cv2.VideoCapture(camera_index)
-        if not self.cap.isOpened():
-            self.text_element.value = "CAM start failed"
-            self.snack_message("CAM start failed", 'red')
-            self.datasets_page_porgress_ring.visible = False
-            self.validate_progress_bar.visible = False
-            self.validate_progress_bar.update()
-            self.page.update()
-            return
-        self.text_element.value = "CAM start success"
-        self.snack_message("CAM start success", 'green')
-        self.datasets_page_porgress_ring.visible = False
-        self.validate_progress_bar.visible = False
-        self.validate_progress_bar.update()
-        self.page.update()
-        while getattr(threading.currentThread(), "do_run", True):
-            ret, frame = self.cap.read()
-            if not ret:
-                break
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        if self.datasets_page_CAM_type.value=="hikrobotic CAM":
+            sys.path.append(os.path.join(os.getcwd(),'hik_CAM'))
+            from hik_CAM.getFrame import start_cam, exit_cam,get_frame
+            self.cap, self.stOutFrame, self.data_buf = start_cam(nConnectionNum=camera_index)
+
+        elif self.datasets_page_CAM_type.value=="CV CAM":
+            self.cap = cv2.VideoCapture(camera_index)
+        else:
+            self.snack_message('select CAM type first ','red')
+            self.stop_camera()
+        while getattr(threading.current_thread(), "do_run", True):
+
+            if self.datasets_page_CAM_type.value == "hikrobotic CAM":
+                ret, frame = get_frame(self.cap,self.stOutFrame)
+            elif self.datasets_page_CAM_type.value == "CV CAM":
+                ret, frame = self.cap.read()
             conf = float(self.validate_settings_conf.value)
             iou = float(self.validate_settings_iou.value)
             width = int(self.validate_frame_width_input.value)
@@ -830,13 +852,13 @@ class FAHAI:
             try:
                 res = model.predict(frame, conf=conf, iou=iou, imgsz=(width, height))
                 res_plotted = res[0].plot()
-                res_json = res[0].tojson()
+                res_json = res[0].to_json()
                 print(type(res_json))
-                # formatted_json = json.dumps('```dart\n'+res_json+'\n```', indent=4,ensure_ascii=False)
                 markdown_text = f"```dart\n{res_json}\n```"
                 self.validate_results.value = markdown_text
             except:
                 res_plotted = frame
+
             img_pil = Image.fromarray(res_plotted)
             img_byte_arr = BytesIO()
             img_pil.save(img_byte_arr, format="JPEG")
@@ -845,13 +867,61 @@ class FAHAI:
             img_element.src_base64 = img_base64
             self.page.update()
             time.sleep(0.03)
-        self.cap.release()
+        if self.datasets_page_CAM_type.value == "hikrobotic CAM":
+            exit_cam(self.cap,self.data_buf)
+        elif self.datasets_page_CAM_type.value == "CV CAM":
+            self.cap.release()
+
+        # self.cap = cv2.VideoCapture(camera_index)
+        # if not self.cap.isOpened():
+        #     self.text_element.value = "CAM start failed"
+        #     self.snack_message("CAM start failed", 'red')
+        #     self.datasets_page_porgress_ring.visible = False
+        #     self.validate_progress_bar.visible = False
+        #     self.validate_progress_bar.update()
+        #     self.page.update()
+        #     return
+        # self.text_element.value = "CAM start success"
+        # self.snack_message("CAM start success", 'green')
+        # self.datasets_page_porgress_ring.visible = False
+        # self.validate_progress_bar.visible = False
+        # self.validate_progress_bar.update()
+        # self.page.update()
+        # while getattr(threading.currentThread(), "do_run", True):
+        #     ret, frame = self.cap.read()
+        #     if not ret:
+        #         break
+        #     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        #     conf = float(self.validate_settings_conf.value)
+        #     iou = float(self.validate_settings_iou.value)
+        #     width = int(self.validate_frame_width_input.value)
+        #     height = int(self.validate_frame_height_input.value)
+        #
+        #     try:
+        #         res = model.predict(frame, conf=conf, iou=iou, imgsz=(width, height))
+        #         res_plotted = res[0].plot()
+        #         res_json = res[0].tojson()
+        #         print(type(res_json))
+        #         # formatted_json = json.dumps('```dart\n'+res_json+'\n```', indent=4,ensure_ascii=False)
+        #         markdown_text = f"```dart\n{res_json}\n```"
+        #         self.validate_results.value = markdown_text
+        #     except:
+        #         res_plotted = frame
+        #     img_pil = Image.fromarray(res_plotted)
+        #     img_byte_arr = BytesIO()
+        #     img_pil.save(img_byte_arr, format="JPEG")
+        #     img_byte_arr = img_byte_arr.getvalue()
+        #     img_base64 = base64.b64encode(img_byte_arr).decode('utf-8')
+        #     img_element.src_base64 = img_base64
+        #     self.page.update()
+        #     time.sleep(0.03)
+        # self.cap.release()
 
     def start_camera(self, e):
         camera_index = int(self.camera_dropdown.value)
         predict_on = self.predict_on.value
         if self.camera_thread_instance and self.camera_thread_instance.is_alive():
-            self.text_element.value = "摄像头已经在运行"
+            self.text_element.value = "CAM is working"
             self.page.update()
             return
         self.camera_thread_instance = threading.Thread(target=self.camera_thread,
@@ -859,11 +929,15 @@ class FAHAI:
         self.camera_thread_instance.do_run = True
         self.camera_thread_instance.start()
 
-    def stop_camera(self, e):
+    def stop_camera(self, e=None):
         if self.camera_thread_instance:
             self.camera_thread_instance.do_run = False
             self.camera_thread_instance.join()
-            self.text_element.value = "摄像头已停止"
+            self.text_element.value = "CAM is stop"
+            self.datasets_page_porgress_ring.visible = False
+            self.validate_progress_bar.visible = False
+            self.datasets_page_porgress_ring.update()
+            self.validate_progress_bar.update()
             self.img_element.src_base64 = ""
             self.page.update()
 
@@ -918,6 +992,8 @@ class FAHAI:
         # os.system(f'explorer {project_path}')# windows
         if current_os == 'Darwin':
             os.system(f'open {project_path}')  # mac Darwin
+        elif current_os == 'Linux':
+            os.system(f'open {project_path}')  # Linux
         else:
             os.system(f'explorer {project_path}')  # windows
 
@@ -993,7 +1069,7 @@ def main(page: ft.Page):
     # page.window_frameless = True
     # page.window_resizable = False
     page.bgcolor = ft.colors.BLUE_GREY_200
-    page.window_maximized = True
+    page.window.maximized = True
     app = FAHAI(page)
 
 
