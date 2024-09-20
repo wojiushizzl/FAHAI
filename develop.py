@@ -392,7 +392,7 @@ class FAHAI:
                         bgcolor=ft.colors.SURFACE_VARIANT,
                         actions=[
                             self.theme_switch,
-                            ft.IconButton(ft.icons.EXIT_TO_APP, on_click=lambda e: self.page.window_close()),
+                            ft.IconButton(ft.icons.EXIT_TO_APP, on_click=lambda e: self.page.window.close()),
                         ]
 
                     ),
