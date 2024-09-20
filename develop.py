@@ -659,6 +659,7 @@ class FAHAI:
         self.count_datasets(self.selected_project)
         self.update_datasets_card(e)
 
+
     def upload_zip(self, e):
         self.snack_message('upload zip, this function is not ready', 'red')
 
