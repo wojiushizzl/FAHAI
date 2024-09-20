@@ -27,6 +27,7 @@ class FAHAI:
         self.target_directory = None
         self.cap = None
         self.model_path = None
+
         self.setup_ui()
 
     def setup_ui(self):
