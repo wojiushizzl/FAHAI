@@ -1069,7 +1069,7 @@ def main(page: ft.Page):
     # page.window_frameless = True
     # page.window_resizable = False
     page.bgcolor = ft.colors.BLUE_GREY_200
-    page.window.maximized = True
+    page.window_maximized = True
     app = FAHAI(page)
 
 
