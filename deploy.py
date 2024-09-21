@@ -99,7 +99,7 @@ class FAHAI:
                     ])),
                     ft.Card(ft.Column([ft.Row([self.deploy_results_text]), ft.Row([self.deploy_results])],
                                       scroll=ft.ScrollMode.ALWAYS), expand=True)
-                ], scroll=ft.ScrollMode.ALWAYS), expand=3),
+                ], scroll=ft.ScrollMode.ALWAYS), alignment=ft.alignment.top_left,expand=3),
             ft.Container(ft.Column([self.deploy_img_element], alignment=ft.MainAxisAlignment.SPACE_AROUND,
                                    horizontal_alignment=ft.CrossAxisAlignment.CENTER), expand=7),
         ])
@@ -361,7 +361,7 @@ class FAHAI:
             self.camera_thread_instance.do_run = False
             self.camera_thread_instance.join()
             self.snack_message('CAM is stopped', 'green')
-            self.deploy_progress_bar.visible = True
+            self.deploy_progress_bar.visible = False
             self.deploy_progress_bar.update()
             self.deploy_img_element.src_base64 = ""
             self.page.update()
