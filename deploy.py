@@ -12,7 +12,7 @@ import function
 import pandas as pd
 from typing import Dict
 import json
-
+import sys
 
 class FAHAI:
     SETTINGS_FILE = 'settings.json'
@@ -356,11 +356,13 @@ class FAHAI:
         self.camera_thread_instance.do_run = True
         self.camera_thread_instance.start()
 
-    def stop_deploy_camera(self, e):
+    def stop_deploy_camera(self, e=None):
         if self.camera_thread_instance:
             self.camera_thread_instance.do_run = False
             self.camera_thread_instance.join()
             self.snack_message('CAM is stopped', 'green')
+            self.deploy_progress_bar.visible = True
+            self.deploy_progress_bar.update()
             self.deploy_img_element.src_base64 = ""
             self.page.update()
 
@@ -431,21 +433,34 @@ class FAHAI:
         self.deploy_progress_bar.update()
         self.page.update()
 
-        self.cap = cv2.VideoCapture(camera_index)
-        if not self.cap.isOpened():
-            self.snack_message("CAM start failed", 'red')
-            self.deploy_progress_bar.visible = False
-            self.deploy_progress_bar.update()
-            self.page.update()
-            return
-        self.snack_message("CAM start success", 'green')
-        self.deploy_progress_bar.visible = False
-        self.deploy_progress_bar.update()
-        self.page.update()
+        if self.deploy_input_CAM_type.value=="hikrobotic CAM":
+            sys.path.append(os.path.join(os.getcwd(),'hik_CAM'))
+            try:
+                from hik_CAM.getFrame import start_cam, exit_cam,get_frame
+                self.cap, self.stOutFrame, self.data_buf = start_cam(nConnectionNum=camera_index)
+            except Exception as e:
+                self.snack_message(f"Error starting CAM: {e}", 'red')
+                self.deploy_progress_bar.visible = True
+                self.deploy_progress_bar.update()
+                self.page.update()
+                return
+        elif self.deploy_input_CAM_type.value=="CV CAM":
+            try:
+                self.cap = cv2.VideoCapture(camera_index)
+            except Exception as e:
+                self.snack_message(f"Error starting CAM: {e}", 'red')
+                self.deploy_progress_bar.visible = True
+                self.deploy_progress_bar.update()
+                self.page.update()
+                return
+        else:
+            self.snack_message('select CAM type first ','red')
+            self.stop_deploy_camera()
         while getattr(threading.currentThread(), "do_run", True):
-            ret, frame = self.cap.read()
-            if not ret:
-                break
+            if self.deploy_input_CAM_type.value == "hikrobotic CAM":
+                ret, frame = get_frame(self.cap,self.stOutFrame)
+            elif self.deploy_input_CAM_type.value == "CV CAM":
+                ret, frame = self.cap.read()
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             conf = float(self.deploy_settings_conf.value)
             iou = float(self.deploy_settings_iou.value)
@@ -466,8 +481,10 @@ class FAHAI:
             img_element.src_base64 = img_base64
             self.page.update()
             time.sleep(0.03)
-        self.cap.release()
-
+        if self.deploy_input_CAM_type.value == "hikrobotic CAM":
+            exit_cam(self.cap,self.data_buf)
+        elif self.deploy_input_CAM_type.value == "CV CAM":
+            self.cap.release()
     def snack_message(self, message, color):
         self.page.snack_bar = ft.SnackBar(ft.Text(message), bgcolor=color)
         self.page.snack_bar.open = True

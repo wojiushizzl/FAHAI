@@ -877,7 +877,6 @@ class FAHAI:
                 res = model.predict(frame, conf=conf, iou=iou, imgsz=(width, height))
                 res_plotted = res[0].plot()
                 res_json = res[0].to_json()
-                print(type(res_json))
                 markdown_text = f"```dart\n{res_json}\n```"
                 self.validate_results.value = markdown_text
             except:
