@@ -13,7 +13,10 @@ import pandas as pd
 from typing import Dict
 import json
 import sys
-
+try:
+    import Jetson.GPIO as GPIO
+except:
+    print("Jetson.GPIO not found")
 
 class FAHAI:
     SETTINGS_FILE = 'settings.json'
@@ -29,7 +32,10 @@ class FAHAI:
         # self.bg_img = os.path.join(os.getcwd(), 'component', 'bosch-company-equipment-logo-wallpaper.jpg')
         self.bg_img = os.path.join(os.getcwd(), 'component', 'siri.gif')
         self.classes = {}
+        self.selected_classes = []
         self.project_list = function.get_project_list()
+        self.RelayA = [21, 20, 26]
+
         self.setup_ui()
         self.load_settings()
 
@@ -84,7 +90,7 @@ class FAHAI:
                 [
                     ft.Radio(value="streaming", label="streaming", fill_color=ft.colors.GREEN),
                     ft.Radio(value="trigger", label="trigger", fill_color=ft.colors.GREEN),
-                ]),disabled=True)
+                ]), disabled=True)
 
         self.deploy_input_CAM_type = ft.RadioGroup(
             content=ft.Column(
@@ -99,11 +105,19 @@ class FAHAI:
             content=ft.Column(
                 [
                     ft.Radio(value="detected results [include] left selected classes",
-                             label="if detected results [include] left selected classes  -> true", fill_color=ft.colors.GREEN),
+                             label="if detected results [include] left selected classes  -> true",
+                             fill_color=ft.colors.GREEN),
                     ft.Radio(value="detected results [in] left selected classes",
-                             label="if detected results [in] left selected classes -> true", fill_color=ft.colors.GREEN),
+                             label="if detected results [in] left selected classes -> true",
+                             fill_color=ft.colors.GREEN),
                     ft.Radio(value="detected results & left selected classes [No intersection]",
                              label="if detected results & left selected classes [No intersection] -> true",
+                             fill_color=ft.colors.GREEN),
+                    ft.Radio(value="detected results & left selected classes [intersection]",
+                             label="if detected results & left selected classes [intersection] -> true",
+                             fill_color=ft.colors.GREEN),
+                    ft.Radio(value="count",
+                             label="count -> Number of detected objects",
                              fill_color=ft.colors.GREEN),
 
                 ]))
@@ -111,15 +125,14 @@ class FAHAI:
         self.deploy_output_type = ft.RadioGroup(
             content=ft.Column(
                 [
-                    ft.Radio(value="Visualize", label="Visualize", fill_color=ft.colors.GREEN,toggleable=True),
+                    ft.Radio(value="Visualize", label="Visualize", fill_color=ft.colors.GREEN, toggleable=True),
                 ]))
-        self.deploy_output_GPIO = ft.RadioGroup(
+        self.deploy_output_GPIO = ft.RadioGroup(on_change=self.initialize_gpio,
             content=ft.Column(
                 [
-                    ft.Radio(value="GPIO_24", label="GPIO_24", fill_color=ft.colors.GREEN,toggleable=True),
+                    ft.Radio(value="GPIO_21", label="GPIO_21", fill_color=ft.colors.GREEN, toggleable=True),
 
                 ]))
-
 
         self.deploy_page = ft.Row([
             ft.Container(
@@ -200,10 +213,10 @@ class FAHAI:
                                         ft.Column([
                                             ft.Row([
                                                 ft.Text('Classes', width=80), self.deploy_logtic_class_select,
-                                                ft.Text('Logic select'),self.deploy_logtic_type,
+                                                ft.Text('Logic select'), self.deploy_logtic_type,
                                                 ft.Text('', width=10),
-                                                    ],
-                                                   vertical_alignment=ft.CrossAxisAlignment.START),
+                                            ],
+                                                vertical_alignment=ft.CrossAxisAlignment.START),
 
                                         ])
                                     )
@@ -216,7 +229,8 @@ class FAHAI:
                                 controls=[
                                     ft.Card(
                                         ft.Column([
-                                            ft.Row([ft.Text('Output type', width=80), self.deploy_output_type,self.deploy_output_GPIO,
+                                            ft.Row([ft.Text('Output type', width=80), self.deploy_output_type,
+                                                    self.deploy_output_GPIO,
                                                     ft.Text('', width=10)]),
 
                                         ])
@@ -295,7 +309,8 @@ class FAHAI:
             if os.path.exists(self.SETTINGS_FILE):
                 with open(self.SETTINGS_FILE, 'r') as f:
                     settings = json.load(f)
-
+            self.selected_classes = [control.label for control in self.deploy_logtic_class_select.controls if
+                                     control.value]
             settings[self.deploy_choice_dropdown.value] = {
                 'selected_project': self.selected_project,
                 'model_path': self.model_path,
@@ -308,9 +323,8 @@ class FAHAI:
                 'deploy_frame_width': self.deploy_frame_width_input.value,
                 'deploy_frame_height': self.deploy_frame_height_input.value,
                 'trigger_type': self.deploy_input_trigger_type.value,
-                'all_classes':self.classes,
-                'logtic_class_select': [control.label for control in self.deploy_logtic_class_select.controls if
-                                        control.value],
+                'all_classes': self.classes,
+                'logtic_class_select': self.selected_classes,
                 'logtic_type': self.deploy_logtic_type.value,
                 'output_type': self.deploy_output_type.value,
                 'output_GPIO': self.deploy_output_GPIO.value,
@@ -368,11 +382,12 @@ class FAHAI:
                 self.deploy_input_CAM_type.update()
 
                 self.classes = settings.get('all_classes', {})
-
+                self.selected_classes = settings.get('logtic_class_select', [])
                 self.deploy_logtic_class_select.controls = []
                 for i, class_key in enumerate(self.classes.keys()):
                     self.deploy_logtic_class_select.controls.append(ft.Checkbox(
-                        label=self.classes[class_key], value=True if self.classes[class_key] in settings.get('logtic_class_select', []) else False))
+                        label=self.classes[class_key],
+                        value=True if self.classes[class_key] in settings.get('logtic_class_select', []) else False))
                 self.deploy_logtic_class_select.update()
 
                 self.deploy_logtic_type.value = settings.get('logtic_type', [])
@@ -384,7 +399,7 @@ class FAHAI:
                 self.deploy_output_type.value = settings.get('output_type', 'Visualize')
                 self.deploy_output_type.update()
 
-                self.deploy_output_GPIO.value = settings.get('output_GPIO', 'GPIO_24')
+                self.deploy_output_GPIO.value = settings.get('output_GPIO', 'GPIO_21')
                 self.deploy_output_GPIO.update()
 
                 self.page.update()
@@ -520,6 +535,21 @@ class FAHAI:
             model_path = os.path.join(os.getcwd(), 'pre_model', 'yolov8n.pt')
         return YOLO(model_path)
 
+    def initialize_gpio(self,e=None):
+        try:
+            GPIO.setmode(GPIO.BCM)
+            GPIO.setwarnings(False)
+            GPIO.setup(self.RelayA[0], GPIO.OUT, initial=GPIO.LOW)
+            GPIO.setup(self.RelayA[1], GPIO.OUT, initial=GPIO.LOW)
+            GPIO.setup(self.RelayA[2], GPIO.OUT, initial=GPIO.LOW)
+            self.snack_message(
+                f"GPIO initialized, RelayA: {RelayA[0]}, {RelayA[1]}, {RelayA[2]}", 'green'
+            )
+        except Exception as e:
+            self.deploy_output_GPIO.value = "None"
+            self.deploy_output_GPIO.update()
+            self.snack_message(f"Error initializing GPIO: {e}", 'red')
+
     def camera_thread(self, camera_index, img_element, predict_on=False, model_path=None):
         if predict_on:
             self.deploy_progress_bar.visible = True
@@ -558,6 +588,7 @@ class FAHAI:
         else:
             self.snack_message('select CAM type first ', 'red')
             self.stop_deploy_camera()
+
         while getattr(threading.currentThread(), "do_run", True):
             if self.deploy_input_CAM_type.value == "hikrobotic CAM":
                 ret, frame = get_frame(self.cap, self.stOutFrame)
@@ -570,12 +601,28 @@ class FAHAI:
             height = int(self.deploy_frame_height_input.value)
             try:
                 res = model.predict(frame, conf=conf, iou=iou, imgsz=(width, height))
+
                 res_plotted = res[0].plot()
                 res_json = res[0].tojson()
+                logic_result = self.logic_check(res_json)
+
                 markdown_text = f"```dart\n{res_json}\n```"
                 self.deploy_results.value = markdown_text
             except:
                 res_plotted = frame
+            if self.deploy_output_type.value == "Visualize":
+                if logic_result :
+                    res_plotted = cv2.putText(res_plotted, "Logic check pass", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                                             (0, 255, 0), 2, cv2.LINE_AA)
+                else:
+                    res_plotted = cv2.putText(res_plotted, "Logic check failed", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1,
+                                             (0, 0, 255), 2, cv2.LINE_AA)
+            if self.deploy_output_GPIO.value == "GPIO_21":
+                if logic_result:
+                    GPIO.output(self.RelayA[0], GPIO.HIGH)
+                else:
+                    GPIO.output(self.RelayA[0], GPIO.LOW)
+
             img_pil = Image.fromarray(res_plotted)
             img_byte_arr = BytesIO()
             img_pil.save(img_byte_arr, format="JPEG")
@@ -587,6 +634,38 @@ class FAHAI:
             exit_cam(self.cap, self.data_buf)
         elif self.deploy_input_CAM_type.value == "CV CAM":
             self.cap.release()
+
+    def logic_check(self, res_json) -> bool:
+        res_json_load = json.loads(res_json)
+        result_classes = [r['name'] for r in res_json_load]
+        if self.deploy_logtic_type.value == "detected results [include] left selected classes":
+            # if detected result_classes [include] left selected classes  -> true
+            l='INCLODE'
+            check_result=all(item in result_classes for item in self.selected_classes)
+
+        elif self.deploy_logtic_type.value == "detected results [in] left selected classes":
+            # if detected result_classes [in] left selected classes -> true
+            l='IN'
+            check_result=all(item in self.selected_classes for item in result_classes)
+
+        elif self.deploy_logtic_type.value == "detected results & left selected classes [No intersection]":
+            # if detected result_classes & left selected classes [No intersection] -> true
+            l='NO INTERSECTION WITH'
+            check_result=len(set(result_classes).intersection(set(self.selected_classes))) == 0
+        elif self.deploy_logtic_type.value == "detected results & left selected classes [intersection]":
+            # if detected result_classes & left selected classes [intersection] -> true
+            l='INTERSECTION WITH'
+            check_result=len(set(result_classes).intersection(set(self.selected_classes))) > 0
+        elif self.deploy_logtic_type.value == "count":
+            # count each kind of object in result_classes,and return a dict
+            # return {item: result_classes.count(item) for item in set(result_classes)}
+            l='COUNT'
+            check_result = sum(result_classes.count(item) for item in set(self.selected_classes))
+
+        print(f'detected:{result_classes} {l} target:{self.selected_classes} -> {check_result}')
+        print('-------------------')
+        return check_result
+
 
     def snack_message(self, message, color):
         self.page.snack_bar = ft.SnackBar(ft.Text(message), bgcolor=color)
