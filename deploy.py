@@ -14,6 +14,7 @@ from typing import Dict
 import json
 import sys
 
+
 class FAHAI:
     SETTINGS_FILE = 'settings.json'
 
@@ -27,16 +28,16 @@ class FAHAI:
         self.model_path = None
         # self.bg_img = os.path.join(os.getcwd(), 'component', 'bosch-company-equipment-logo-wallpaper.jpg')
         self.bg_img = os.path.join(os.getcwd(), 'component', 'siri.gif')
-
+        self.classes = {}
         self.project_list = function.get_project_list()
         self.setup_ui()
         self.load_settings()
 
     def setup_ui(self):
         self.theme_switch = ft.IconButton(ft.icons.WB_SUNNY_OUTLINED, on_click=self.change_theme)
-        self.deploy_choice_text = ft.Text(expand=True,size=40,text_align=ft.TextAlign.CENTER)
+        self.deploy_choice_text = ft.Text(expand=True, size=40, text_align=ft.TextAlign.CENTER)
 
-        self.deploy_choice_dropdown = ft.Dropdown(label='select choice',expand=True,on_change=self.load_settings)
+        self.deploy_choice_dropdown = ft.Dropdown(label='select choice', expand=True, on_change=self.load_settings)
         self.deploy_add_choice_button = ft.IconButton(ft.icons.ADD, on_click=self.add_choice, width=60)
         self.deploy_save_choice_button = ft.IconButton(ft.icons.SAVE, on_click=self.save_settings, width=60)
         self.deploy_remove_choice_button = ft.IconButton(ft.icons.DELETE, on_click=self.remove_choice, width=60)
@@ -50,7 +51,7 @@ class FAHAI:
         self.deploy_camera_dropdown = ft.Dropdown(label="select CAM",
                                                   options=[ft.dropdown.Option(str(i)) for i in range(5)], value="0",
                                                   width=200, expand=True)
-        self.deploy_weight_manual_select = ft.TextButton("Import", icon=ft.icons.DRIVE_FOLDER_UPLOAD,
+        self.deploy_weight_manual_select = ft.TextButton("Import .pt", icon=ft.icons.DRIVE_FOLDER_UPLOAD,
                                                          on_click=lambda _: self.model_picker.pick_files(
                                                              allow_multiple=False, allowed_extensions=['pt']),
                                                          expand=True)
@@ -70,7 +71,7 @@ class FAHAI:
         self.deploy_results = ft.Markdown(selectable=True, extension_set="gitHubWeb", code_theme="atom-one-dark",
                                           code_style=ft.TextStyle(font_family="Roboto Mono"), expand=True)
         self.deploy_results_text = ft.Text('Results', expand=True)
-        self.deploy_model_path = ft.Text(self.model_path, italic=True,expand=True)
+        self.deploy_model_path = ft.Text(self.model_path, italic=True, expand=True)
         self.model_picker = ft.FilePicker(on_result=self.on_model_picked)
         self.page.overlay.append(self.model_picker)
         self.image_picker = ft.FilePicker(on_result=self.upload_img_predict)
@@ -78,20 +79,52 @@ class FAHAI:
         self.deploy_progress_bar = ft.ProgressBar(visible=False, height=5, expand=True)
         self.deploy_settings_conf = ft.Slider(label='Confidence', min=0, max=1, divisions=10, value=0.3, expand=True)
         self.deploy_settings_iou = ft.Slider(label='IOU', min=0, max=1, divisions=10, value=0.5, expand=True)
-        self.deploy_input_CAM_type=ft.RadioGroup(
+        self.deploy_input_trigger_type = ft.RadioGroup(
             content=ft.Column(
                 [
-                    ft.Radio(value="hikrobotic CAM", label="hikrobotic CAM",fill_color=ft.colors.GREEN),
+                    ft.Radio(value="streaming", label="streaming", fill_color=ft.colors.GREEN),
+                    ft.Radio(value="trigger", label="trigger", fill_color=ft.colors.GREEN),
+                ]),disabled=True)
+
+        self.deploy_input_CAM_type = ft.RadioGroup(
+            content=ft.Column(
+                [
+                    ft.Radio(value="hikrobotic CAM", label="hikrobotic CAM", fill_color=ft.colors.GREEN),
                     ft.Radio(value="CV CAM", label="CV CAM", fill_color=ft.colors.GREEN),
-                ]
-            )
-        )
+                ]))
+
+        self.deploy_logtic_class_select = ft.Column([])
+
+        self.deploy_logtic_type = ft.RadioGroup(
+            content=ft.Column(
+                [
+                    ft.Radio(value="detected results [include] left selected classes",
+                             label="if detected results [include] left selected classes  -> true", fill_color=ft.colors.GREEN),
+                    ft.Radio(value="detected results [in] left selected classes",
+                             label="if detected results [in] left selected classes -> true", fill_color=ft.colors.GREEN),
+                    ft.Radio(value="detected results & left selected classes [No intersection]",
+                             label="if detected results & left selected classes [No intersection] -> true",
+                             fill_color=ft.colors.GREEN),
+
+                ]))
+
+        self.deploy_output_type = ft.RadioGroup(
+            content=ft.Column(
+                [
+                    ft.Radio(value="Visualize", label="Visualize", fill_color=ft.colors.GREEN,toggleable=True),
+                ]))
+        self.deploy_output_GPIO = ft.RadioGroup(
+            content=ft.Column(
+                [
+                    ft.Radio(value="GPIO_24", label="GPIO_24", fill_color=ft.colors.GREEN,toggleable=True),
+
+                ]))
 
 
         self.deploy_page = ft.Row([
             ft.Container(
                 ft.Column([
-                    ft.Card(ft.Column([ft.Row([ft.Text('selected choice :'),self.deploy_choice_text])])),
+                    ft.Card(ft.Column([ft.Row([ft.Text('selected choice :'), self.deploy_choice_text])])),
                     ft.Card(ft.Column([ft.Row([self.deploy_settings_start_button, self.deploy_settings_stop_button]),
                                        ft.Row([self.deploy_progress_bar])])),
                     ft.Card(ft.Column([
@@ -99,7 +132,7 @@ class FAHAI:
                     ])),
                     ft.Card(ft.Column([ft.Row([self.deploy_results_text]), ft.Row([self.deploy_results])],
                                       scroll=ft.ScrollMode.ALWAYS), expand=True)
-                ], scroll=ft.ScrollMode.ALWAYS), alignment=ft.alignment.top_left,expand=3),
+                ], scroll=ft.ScrollMode.ALWAYS), alignment=ft.alignment.top_left, expand=3),
             ft.Container(ft.Column([self.deploy_img_element], alignment=ft.MainAxisAlignment.SPACE_AROUND,
                                    horizontal_alignment=ft.CrossAxisAlignment.CENTER), expand=7),
         ])
@@ -112,72 +145,89 @@ class FAHAI:
                 controls=[
                     ft.Card(
                         ft.Column([
-                            ft.Row([ft.Text('Choice', width=80), self.deploy_choice_dropdown, self.deploy_add_choice_button,self.deploy_save_choice_button,
+                            ft.Row([ft.Text('Choice', width=80), self.deploy_choice_dropdown,
+                                    self.deploy_add_choice_button, self.deploy_save_choice_button,
                                     self.deploy_remove_choice_button, ft.Text('', width=10)]),
 
-            ft.ExpansionTile(
-                title=ft.Text("Project Settings"),
-                # subtitle=ft.Text("Deploy settings"),
-                initially_expanded=True,
-                controls=[
-                    ft.Card(
-                        ft.Column([
-                            ft.Row([ft.Text('Project', width=80), self.deploy_project_dropdown,
-                                    self.deploy_project_folder_button, ft.Text('', width=10)]),
-                            ft.Row([ft.Text('history', width=80), self.deploy_settings_history, ft.Text('', width=10)]),
-                            ft.Row([ft.Text('weight', width=80), self.deploy_settings_weight, self.deploy_weight_manual_select,
-                                    ft.Text('', width=10)]),
-                            ft.Row([ft.Text('model path', width=80), self.deploy_model_path, ft.Text('', width=10)]),
-                        ])
-                    )
-                ]
-            ),
-            ft.ExpansionTile(
-                title=ft.Text("Input Settings"),
-                # subtitle=ft.Text("Deploy settings"),
-                initially_expanded=True,
-                controls=[
-                    ft.Card(
-                        ft.Column([
-                            ft.Row([ft.Text('CAM', width=80),self.deploy_input_CAM_type, self.deploy_camera_dropdown, ft.Text('', width=10)]),
-                            ft.Row([ft.Text('imgsz', width=80), self.deploy_frame_width_input,
-                                    ft.Text('X'), self.deploy_frame_height_input, ft.Text('', width=10)]),
-                            ft.Row([ft.Text('Confidence', width=80), self.deploy_settings_conf, ft.Text('', width=10)]),
-                            ft.Row([ft.Text('IOU', width=80), self.deploy_settings_iou, ft.Text('', width=10)]),
-                        ])
-                    )
-                ]
-            ),
-            ft.ExpansionTile(
-                title=ft.Text("Logic Settings"),
-                # subtitle=ft.Text("Deploy settings"),
-                initially_expanded=True,
-                controls=[
-                    ft.Card(
-                        ft.Column([
-                            # ft.Row([ft.Text('CAM', width=80), self.deploy_camera_dropdown, ft.Text('', width=10)]),
-                        ])
-                    )
-                ]
-            ),
-            ft.ExpansionTile(
-                title=ft.Text("Output Settings"),
-                # subtitle=ft.Text("Deploy settings"),
-                initially_expanded=True,
-                controls=[
-                    ft.Card(
-                        ft.Column([
-                            # ft.Row([ft.Text('CAM', width=80), self.deploy_camera_dropdown, ft.Text('', width=10)]),
-                        ])
-                    )
-                ]
-            ),
-                        ])
-                    )
-                ]
-            ),
-        ],spacing=0)
+                            ft.ExpansionTile(
+                                title=ft.Text("Project Settings"),
+                                # subtitle=ft.Text("Deploy settings"),
+                                initially_expanded=False,
+                                controls=[
+                                    ft.Card(
+                                        ft.Column([
+                                            ft.Row([ft.Text('Project', width=80), self.deploy_project_dropdown,
+                                                    self.deploy_project_folder_button, ft.Text('', width=10)]),
+                                            ft.Row([ft.Text('history', width=80), self.deploy_settings_history,
+                                                    ft.Text('', width=10)]),
+                                            ft.Row([ft.Text('weight', width=80), self.deploy_settings_weight,
+                                                    self.deploy_weight_manual_select,
+                                                    ft.Text('', width=10)]),
+                                            ft.Row([ft.Text('model path', width=80), self.deploy_model_path,
+                                                    ft.Text('', width=10)]),
+                                        ])
+                                    )
+                                ]
+                            ),
+                            ft.ExpansionTile(
+                                title=ft.Text("Input Settings"),
+                                # subtitle=ft.Text("Deploy settings"),
+                                initially_expanded=False,
+                                controls=[
+                                    ft.Card(
+                                        ft.Column([
+                                            ft.Row([ft.Text('CAM', width=80), self.deploy_input_CAM_type,
+                                                    self.deploy_camera_dropdown, ft.Text('', width=10)]),
+                                            ft.Row([ft.Text('imgsz', width=80), self.deploy_frame_width_input,
+                                                    ft.Text('X'), self.deploy_frame_height_input,
+                                                    ft.Text('', width=10)]),
+                                            ft.Row([ft.Text('Confidence', width=80), self.deploy_settings_conf,
+                                                    ft.Text('', width=10)]),
+                                            ft.Row([ft.Text('IOU', width=80), self.deploy_settings_iou,
+                                                    ft.Text('', width=10)]),
+                                            ft.Row([ft.Text('Trigger type', width=80), self.deploy_input_trigger_type,
+                                                    ft.Text('', width=10)]),
+                                        ])
+                                    )
+                                ]
+                            ),
+                            ft.ExpansionTile(
+                                title=ft.Text("Logic Settings"),
+                                # subtitle=ft.Text("Deploy settings"),
+                                initially_expanded=False,
+                                controls=[
+                                    ft.Card(
+                                        ft.Column([
+                                            ft.Row([
+                                                ft.Text('Classes', width=80), self.deploy_logtic_class_select,
+                                                ft.Text('Logic select'),self.deploy_logtic_type,
+                                                ft.Text('', width=10),
+                                                    ],
+                                                   vertical_alignment=ft.CrossAxisAlignment.START),
 
+                                        ])
+                                    )
+                                ]
+                            ),
+                            ft.ExpansionTile(
+                                title=ft.Text("Output Settings"),
+                                # subtitle=ft.Text("Deploy settings"),
+                                initially_expanded=False,
+                                controls=[
+                                    ft.Card(
+                                        ft.Column([
+                                            ft.Row([ft.Text('Output type', width=80), self.deploy_output_type,self.deploy_output_GPIO,
+                                                    ft.Text('', width=10)]),
+
+                                        ])
+                                    )
+                                ]
+                            ),
+                        ], scroll=ft.ScrollMode.ALWAYS)
+                    )
+                ]
+            ),
+        ], scroll=ft.ScrollMode.ALWAYS, spacing=0)
 
         self.t = ft.Tabs(selected_index=0, animation_duration=300, tabs=[
             ft.Tab(text="deploy", icon=ft.icons.FACT_CHECK, content=self.deploy_page),
@@ -205,6 +255,7 @@ class FAHAI:
                 self.snack_message(f"Error remove choice: {e}", 'red')
         else:
             self.snack_message('Please select a choice', 'red')
+
     def add_choice(self, e):
         def on_dialog_submit(d):
             new_choice = d.content.value
@@ -221,6 +272,7 @@ class FAHAI:
             d.open = False
             d.update()
             self.snack_message(f'Add choice{new_choice} success', 'green')
+
         def on_dialog_cancel(d):
             d.open = False
             d.update()
@@ -236,6 +288,7 @@ class FAHAI:
         self.page.dialog = dialog
         dialog.open = True
         self.page.update()
+
     def save_settings(self, e=None):
         try:
             settings = {}
@@ -254,6 +307,13 @@ class FAHAI:
                 'deploy_settings_iou': self.deploy_settings_iou.value,
                 'deploy_frame_width': self.deploy_frame_width_input.value,
                 'deploy_frame_height': self.deploy_frame_height_input.value,
+                'trigger_type': self.deploy_input_trigger_type.value,
+                'all_classes':self.classes,
+                'logtic_class_select': [control.label for control in self.deploy_logtic_class_select.controls if
+                                        control.value],
+                'logtic_type': self.deploy_logtic_type.value,
+                'output_type': self.deploy_output_type.value,
+                'output_GPIO': self.deploy_output_GPIO.value,
                 'theme_mode': self.page.theme_mode.name
             }
             with open(self.SETTINGS_FILE, 'w') as f:
@@ -261,7 +321,8 @@ class FAHAI:
             self.snack_message('Save settings success', 'green')
         except Exception as e:
             self.snack_message(f"Error saving settings: {e}", 'red')
-    def load_settings(self,e=None):
+
+    def load_settings(self, e=None):
         try:
             with open(self.SETTINGS_FILE, 'r') as f:
                 settings = json.load(f)
@@ -276,7 +337,7 @@ class FAHAI:
                     self.deploy_choice_dropdown.update()
                 else:
                     pass
-                self.deploy_choice_text.value=self.deploy_choice_dropdown.value
+                self.deploy_choice_text.value = self.deploy_choice_dropdown.value
                 self.deploy_choice_text.update()
                 settings = settings.get(self.deploy_choice_dropdown.value)
                 self.selected_project = settings.get('selected_project')
@@ -286,7 +347,7 @@ class FAHAI:
                 self.find_train_history(self.selected_project)
                 self.deploy_settings_history.value = settings.get('deploy_settings_history')
                 self.deploy_camera_dropdown.value = settings.get('deploy_settings_camera', '0')
-                self.deploy_input_CAM_type.value=settings.get('deploy_settings_cam_type','CV CAM')
+                self.deploy_input_CAM_type.value = settings.get('deploy_settings_cam_type', 'CV CAM')
 
                 self.deploy_settings_weight.options.clear()
                 self.find_weights(None)
@@ -305,6 +366,27 @@ class FAHAI:
                 self.deploy_model_path.update()
                 self.theme_switch.update()
                 self.deploy_input_CAM_type.update()
+
+                self.classes = settings.get('all_classes', {})
+
+                self.deploy_logtic_class_select.controls = []
+                for i, class_key in enumerate(self.classes.keys()):
+                    self.deploy_logtic_class_select.controls.append(ft.Checkbox(
+                        label=self.classes[class_key], value=True if self.classes[class_key] in settings.get('logtic_class_select', []) else False))
+                self.deploy_logtic_class_select.update()
+
+                self.deploy_logtic_type.value = settings.get('logtic_type', [])
+                self.deploy_logtic_type.update()
+
+                self.deploy_input_trigger_type.value = settings.get('trigger_type', 'streaming')
+                self.deploy_input_trigger_type.update()
+
+                self.deploy_output_type.value = settings.get('output_type', 'Visualize')
+                self.deploy_output_type.update()
+
+                self.deploy_output_GPIO.value = settings.get('output_GPIO', 'GPIO_24')
+                self.deploy_output_GPIO.update()
+
                 self.page.update()
         except FileNotFoundError:
             self.snack_message('No settings file found', 'red')
@@ -327,17 +409,37 @@ class FAHAI:
                                              self.t]))
         self.page.update()
 
+    def find_classes(self, e):
+        # find classes from .pt file
+        from ultralytics import YOLO
+        try:
+            model = self.load_model(YOLO, self.model_path)
+            self.classes = model.names
+            print(self.classes)
+            self.deploy_logtic_class_select.controls = []
+            for i, class_key in enumerate(self.classes.keys()):
+                self.deploy_logtic_class_select.controls.append(ft.Checkbox(
+                    label=self.classes[class_key], value=False))
+
+            self.deploy_logtic_class_select.update()
+        except Exception as e:
+            self.snack_message(f"Error finding weight path: {e}", 'red')
+
     def on_model_picked(self, e: ft.FilePickerResultEvent):
         if e.files:
             self.model_path = e.files[0].path
             self.deploy_model_path.value = self.model_path
             self.deploy_model_path.update()
+            self.snack_message(f"Import model {self.model_path} success", 'green')
+        self.find_classes(e)
 
     def find_weight_path(self, e):
+        # find weight path
         self.model_path = os.path.join(os.getcwd(), 'projects', self.selected_project, 'train',
                                        self.deploy_settings_history.value, 'weights', self.deploy_settings_weight.value)
         self.deploy_model_path.value = self.model_path
         self.deploy_model_path.update()
+        self.find_classes(e)
 
     def start_deploy_camera(self, e):
         self.deploy_progress_bar.visible = True
@@ -433,10 +535,10 @@ class FAHAI:
         self.deploy_progress_bar.update()
         self.page.update()
 
-        if self.deploy_input_CAM_type.value=="hikrobotic CAM":
-            sys.path.append(os.path.join(os.getcwd(),'hik_CAM'))
+        if self.deploy_input_CAM_type.value == "hikrobotic CAM":
+            sys.path.append(os.path.join(os.getcwd(), 'hik_CAM'))
             try:
-                from hik_CAM.getFrame import start_cam, exit_cam,get_frame
+                from hik_CAM.getFrame import start_cam, exit_cam, get_frame
                 self.cap, self.stOutFrame, self.data_buf = start_cam(nConnectionNum=camera_index)
             except Exception as e:
                 self.snack_message(f"Error starting CAM: {e}", 'red')
@@ -444,7 +546,7 @@ class FAHAI:
                 self.deploy_progress_bar.update()
                 self.page.update()
                 return
-        elif self.deploy_input_CAM_type.value=="CV CAM":
+        elif self.deploy_input_CAM_type.value == "CV CAM":
             try:
                 self.cap = cv2.VideoCapture(camera_index)
             except Exception as e:
@@ -454,11 +556,11 @@ class FAHAI:
                 self.page.update()
                 return
         else:
-            self.snack_message('select CAM type first ','red')
+            self.snack_message('select CAM type first ', 'red')
             self.stop_deploy_camera()
         while getattr(threading.currentThread(), "do_run", True):
             if self.deploy_input_CAM_type.value == "hikrobotic CAM":
-                ret, frame = get_frame(self.cap,self.stOutFrame)
+                ret, frame = get_frame(self.cap, self.stOutFrame)
             elif self.deploy_input_CAM_type.value == "CV CAM":
                 ret, frame = self.cap.read()
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -482,9 +584,10 @@ class FAHAI:
             self.page.update()
             time.sleep(0.03)
         if self.deploy_input_CAM_type.value == "hikrobotic CAM":
-            exit_cam(self.cap,self.data_buf)
+            exit_cam(self.cap, self.data_buf)
         elif self.deploy_input_CAM_type.value == "CV CAM":
             self.cap.release()
+
     def snack_message(self, message, color):
         self.page.snack_bar = ft.SnackBar(ft.Text(message), bgcolor=color)
         self.page.snack_bar.open = True
@@ -534,4 +637,4 @@ def main(page: ft.Page):
 
 
 if __name__ == "__main__":
-    ft.app(target=main,assets_dir='assets')
+    ft.app(target=main, assets_dir='assets')

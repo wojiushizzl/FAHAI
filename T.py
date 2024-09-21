@@ -1,31 +1,23 @@
 import flet as ft
 
-def main(page: ft.Page):
-    def find_option(option_name):
-        for option in d.options:
-            if option_name == option.key:
-                return option
-        return None
-
-    def add_clicked(e):
-        d.options.append(ft.dropdown.Option(option_textbox.value))
-        d.value = option_textbox.value
-        option_textbox.value = ""
+def main(page):
+    def button_clicked(e):
+        t.value = f"你选择的颜色是：{cg.value}"
         page.update()
 
-    def delete_clicked(e):
-        option = find_option(d.value)
-        if option!= None:
-            d.options.remove(option)
-            # d.value = None
-            page.update()
+    t = ft.Text()
+    b = ft.ElevatedButton(text="提交", on_click=button_clicked)
+    cg = ft.RadioGroup(
+        content=ft.Column(
+            [
+                ft.CupertinoRadio(value="red", label="红色 - Cupertino 单选按钮", active_color=ft.colors.RED, inactive_color=ft.colors.RED),
+                ft.Radio(value="green", label="绿色 - Material 单选按钮", fill_color=ft.colors.GREEN),
+                ft.Radio(value="blue", label="蓝色 - 自适应单选按钮", adaptive=True, active_color=ft.colors.BLUE),
+            ]
+        )
+    )
 
-    d = ft.Dropdown()
-    option_textbox = ft.TextField(hint_text="输入项目名称")
-    add = ft.ElevatedButton("添加", on_click=add_clicked)
-    delete = ft.OutlinedButton("删除所选项目", on_click=delete_clicked)
-    #如何同时更新两个dropdown的值
+    page.add(ft.Text("请选择你喜欢的颜色:"), cg, b, t)
 
-    page.add(d,d, ft.Row(controls=[option_textbox, add, delete]))
 
 ft.app(target=main)
