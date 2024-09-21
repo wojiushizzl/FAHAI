@@ -280,17 +280,23 @@ class FAHAI:
                         ft.Row(
                             [ft.Text('img size', width=80), self.train_settings_img_size_width, ft.Text('X', width=10),
                              self.train_settings_img_size_height, ft.Text('', width=10)]),
-                        ft.Row([ft.Text('patience', width=80), self.train_settings_patience, ft.Text('', width=10)]),
-                        ft.Row([ft.Text('degree', width=80), self.train_settings_degree, ft.Text('', width=10)]),
-                        ft.Row([ft.Text('translate', width=80), self.train_settings_translate, ft.Text('', width=10)]),
-                        ft.Row([ft.Text('scale', width=80), self.train_settings_scale, ft.Text('', width=10)]),
-                        ft.Row([ft.Text('flipud', width=80), self.train_settings_flipud, ft.Text('', width=10)]),
-                        ft.Row([ft.Text('fliplr', width=80), self.train_settings_fliplr, ft.Text('', width=10)]),
-                        ft.Row([ft.Text('erasing', width=80), self.train_settings_erasing, ft.Text('', width=10)]),
-                        ft.Row([ft.Text('mosaic', width=80), self.train_settings_mosaic, ft.Text('', width=10)]),
-                        ft.Row([ft.Text('mixup', width=80), self.train_settings_mixup, ft.Text('', width=10)]),
-                        ft.Row(
-                            [ft.Text('copy paste', width=80), self.train_settings_copy_paste, ft.Text('', width=10)]),
+                        ft.ExpansionTile(
+                            title=ft.Text("advanced settings"),
+                            affinity=ft.TileAffinity.PLATFORM,
+                            maintain_state=True,
+                            controls=[
+                                ft.Row([ft.Text('patience', width=80), self.train_settings_patience, ft.Text('', width=10)]),
+                                ft.Row([ft.Text('degree', width=80), self.train_settings_degree, ft.Text('', width=10)]),
+                                ft.Row([ft.Text('translate', width=80), self.train_settings_translate, ft.Text('', width=10)]),
+                                ft.Row([ft.Text('scale', width=80), self.train_settings_scale, ft.Text('', width=10)]),
+                                ft.Row([ft.Text('flipud', width=80), self.train_settings_flipud, ft.Text('', width=10)]),
+                                ft.Row([ft.Text('fliplr', width=80), self.train_settings_fliplr, ft.Text('', width=10)]),
+                                ft.Row([ft.Text('erasing', width=80), self.train_settings_erasing, ft.Text('', width=10)]),
+                                ft.Row([ft.Text('mosaic', width=80), self.train_settings_mosaic, ft.Text('', width=10)]),
+                                ft.Row([ft.Text('mixup', width=80), self.train_settings_mixup, ft.Text('', width=10)]),
+                                ft.Row(
+                                    [ft.Text('copy paste', width=80), self.train_settings_copy_paste, ft.Text('', width=10)]),
+                        ]),
                         ft.Row([self.train_settings_start_button, ft.Text('', width=10)]),
                         ft.Row([self.train_settings_progress_ring])
 
@@ -319,7 +325,7 @@ class FAHAI:
                             ft.Row([ft.Text('weight', width=80), self.validate_settings_weight,
                                     self.validate_weight_manual_select, ft.Text('', width=10)]),
                             ft.Row(
-                                [ft.Text('selected .pt', width=80), self.validate_model_path, ft.Text('', width=10)]),
+                                [ft.Text('path of .pt', width=80), self.validate_model_path, ft.Text('', width=10)]),
                             ft.Row([self.datasets_page_CAM_type,ft.Text('', width=10)]),
                             ft.Row([ft.Text('select CAM', width=80), self.validate_camera_dropdown,
                                     ft.Text('', width=10)]),
@@ -408,7 +414,7 @@ class FAHAI:
                         bgcolor=ft.colors.SURFACE_VARIANT,
                         actions=[
                             self.theme_switch,
-                            ft.IconButton(ft.icons.EXIT_TO_APP, on_click=lambda e: self.page.window.close()),
+                            ft.IconButton(ft.icons.EXIT_TO_APP, on_click=lambda e: self.page.window_close()),
                         ]
 
                     ),
@@ -830,11 +836,28 @@ class FAHAI:
 
         if self.datasets_page_CAM_type.value=="hikrobotic CAM":
             sys.path.append(os.path.join(os.getcwd(),'hik_CAM'))
-            from hik_CAM.getFrame import start_cam, exit_cam,get_frame
-            self.cap, self.stOutFrame, self.data_buf = start_cam(nConnectionNum=camera_index)
-
+            try:
+                from hik_CAM.getFrame import start_cam, exit_cam,get_frame
+                self.cap, self.stOutFrame, self.data_buf = start_cam(nConnectionNum=camera_index)
+            except Exception as e:
+                self.snack_message(f"Error starting CAM: {e}", 'red')
+                self.datasets_page_porgress_ring.visible = False
+                self.validate_progress_bar.visible = False
+                self.datasets_page_porgress_ring.update()
+                self.validate_progress_bar.update()
+                self.page.update()
+                return
         elif self.datasets_page_CAM_type.value=="CV CAM":
-            self.cap = cv2.VideoCapture(camera_index)
+            try:
+                self.cap = cv2.VideoCapture(camera_index)
+            except Exception as e:
+                self.snack_message(f"Error starting CAM: {e}", 'red')
+                self.datasets_page_porgress_ring.visible = False
+                self.validate_progress_bar.visible = False
+                self.datasets_page_porgress_ring.update()
+                self.validate_progress_bar.update()
+                self.page.update()
+                return
         else:
             self.snack_message('select CAM type first ','red')
             self.stop_camera()
@@ -844,6 +867,7 @@ class FAHAI:
                 ret, frame = get_frame(self.cap,self.stOutFrame)
             elif self.datasets_page_CAM_type.value == "CV CAM":
                 ret, frame = self.cap.read()
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             conf = float(self.validate_settings_conf.value)
             iou = float(self.validate_settings_iou.value)
             width = int(self.validate_frame_width_input.value)
@@ -871,51 +895,6 @@ class FAHAI:
             exit_cam(self.cap,self.data_buf)
         elif self.datasets_page_CAM_type.value == "CV CAM":
             self.cap.release()
-
-        # self.cap = cv2.VideoCapture(camera_index)
-        # if not self.cap.isOpened():
-        #     self.text_element.value = "CAM start failed"
-        #     self.snack_message("CAM start failed", 'red')
-        #     self.datasets_page_porgress_ring.visible = False
-        #     self.validate_progress_bar.visible = False
-        #     self.validate_progress_bar.update()
-        #     self.page.update()
-        #     return
-        # self.text_element.value = "CAM start success"
-        # self.snack_message("CAM start success", 'green')
-        # self.datasets_page_porgress_ring.visible = False
-        # self.validate_progress_bar.visible = False
-        # self.validate_progress_bar.update()
-        # self.page.update()
-        # while getattr(threading.currentThread(), "do_run", True):
-        #     ret, frame = self.cap.read()
-        #     if not ret:
-        #         break
-        #     frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        #     conf = float(self.validate_settings_conf.value)
-        #     iou = float(self.validate_settings_iou.value)
-        #     width = int(self.validate_frame_width_input.value)
-        #     height = int(self.validate_frame_height_input.value)
-        #
-        #     try:
-        #         res = model.predict(frame, conf=conf, iou=iou, imgsz=(width, height))
-        #         res_plotted = res[0].plot()
-        #         res_json = res[0].tojson()
-        #         print(type(res_json))
-        #         # formatted_json = json.dumps('```dart\n'+res_json+'\n```', indent=4,ensure_ascii=False)
-        #         markdown_text = f"```dart\n{res_json}\n```"
-        #         self.validate_results.value = markdown_text
-        #     except:
-        #         res_plotted = frame
-        #     img_pil = Image.fromarray(res_plotted)
-        #     img_byte_arr = BytesIO()
-        #     img_pil.save(img_byte_arr, format="JPEG")
-        #     img_byte_arr = img_byte_arr.getvalue()
-        #     img_base64 = base64.b64encode(img_byte_arr).decode('utf-8')
-        #     img_element.src_base64 = img_base64
-        #     self.page.update()
-        #     time.sleep(0.03)
-        # self.cap.release()
 
     def start_camera(self, e):
         camera_index = int(self.camera_dropdown.value)
