@@ -42,7 +42,6 @@ class FAHAI:
     def setup_ui(self):
         self.theme_switch = ft.IconButton(ft.icons.WB_SUNNY_OUTLINED, on_click=self.change_theme)
         self.deploy_choice_text = ft.Text(expand=True, size=40, text_align=ft.TextAlign.CENTER)
-
         self.deploy_choice_dropdown = ft.Dropdown(label='select choice', expand=True, on_change=self.load_settings)
         self.deploy_add_choice_button = ft.IconButton(ft.icons.ADD, on_click=self.add_choice, width=60)
         self.deploy_save_choice_button = ft.IconButton(ft.icons.SAVE, on_click=self.save_settings, width=60)
