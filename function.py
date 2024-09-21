@@ -196,7 +196,7 @@ def find_weights(project_name,trian_name):
     else:
         weights_list = []
 
-    print(weights_list)
+    # print(weights_list)
     return weights_list
 
 def delete_train(project, train_name):

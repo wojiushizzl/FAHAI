@@ -34,8 +34,11 @@ class FAHAI:
 
     def setup_ui(self):
         self.theme_switch = ft.IconButton(ft.icons.WB_SUNNY_OUTLINED, on_click=self.change_theme)
-        self.deploy_choice_dropdown = ft.Dropdown(expand=True,on_change=self.load_settings)
+        self.deploy_choice_text = ft.Text(expand=True,size=40,text_align=ft.TextAlign.CENTER)
+
+        self.deploy_choice_dropdown = ft.Dropdown(label='select choice',expand=True,on_change=self.load_settings)
         self.deploy_add_choice_button = ft.IconButton(ft.icons.ADD, on_click=self.add_choice, width=60)
+        self.deploy_save_choice_button = ft.IconButton(ft.icons.SAVE, on_click=self.save_settings, width=60)
         self.deploy_remove_choice_button = ft.IconButton(ft.icons.DELETE, on_click=self.remove_choice, width=60)
         self.deploy_project_dropdown = ft.Dropdown(options=[ft.dropdown.Option(str(p)) for p in self.project_list],
                                                    expand=True, on_change=self.entry_project)
@@ -53,10 +56,10 @@ class FAHAI:
                                                          expand=True)
         self.deploy_frame_width_input = ft.TextField(label='width', value="640", width=80, expand=True)
         self.deploy_frame_height_input = ft.TextField(label='height', value="480", width=80, expand=True)
-        self.deploy_settings_start_button = ft.ElevatedButton("Start deploy", icon=ft.icons.PLAY_ARROW_ROUNDED,
+        self.deploy_settings_start_button = ft.ElevatedButton("Start", icon=ft.icons.PLAY_ARROW_ROUNDED,
                                                               icon_color='green', on_click=self.start_deploy_camera,
                                                               expand=True, height=50)
-        self.deploy_settings_stop_button = ft.ElevatedButton("Stop deploy", icon=ft.icons.STOP_ROUNDED,
+        self.deploy_settings_stop_button = ft.ElevatedButton("Stop", icon=ft.icons.STOP_ROUNDED,
                                                              icon_color='red', on_click=self.stop_deploy_camera,
                                                              expand=True, height=50)
         self.deploy_settings_upload_button = ft.ElevatedButton("Upload image for predict", icon=ft.icons.UPLOAD,
@@ -75,11 +78,20 @@ class FAHAI:
         self.deploy_progress_bar = ft.ProgressBar(visible=False, height=5, expand=True)
         self.deploy_settings_conf = ft.Slider(label='Confidence', min=0, max=1, divisions=10, value=0.3, expand=True)
         self.deploy_settings_iou = ft.Slider(label='IOU', min=0, max=1, divisions=10, value=0.5, expand=True)
+        self.deploy_input_CAM_type=ft.RadioGroup(
+            content=ft.Column(
+                [
+                    ft.Radio(value="hikrobotic CAM", label="hikrobotic CAM",fill_color=ft.colors.GREEN),
+                    ft.Radio(value="CV CAM", label="CV CAM", fill_color=ft.colors.GREEN),
+                ]
+            )
+        )
+
 
         self.deploy_page = ft.Row([
             ft.Container(
                 ft.Column([
-                    ft.Card(ft.Column([ft.Row([self.deploy_choice_dropdown, self.deploy_add_choice_button,self.deploy_remove_choice_button])])),
+                    ft.Card(ft.Column([ft.Row([ft.Text('selected choice :'),self.deploy_choice_text])])),
                     ft.Card(ft.Column([ft.Row([self.deploy_settings_start_button, self.deploy_settings_stop_button]),
                                        ft.Row([self.deploy_progress_bar])])),
                     ft.Card(ft.Column([
@@ -93,6 +105,16 @@ class FAHAI:
         ])
 
         self.settings_page = ft.Column([
+            ft.ExpansionTile(
+                title=ft.Text("Choice Settings"),
+                # subtitle=ft.Text("Deploy settings"),
+                initially_expanded=True,
+                controls=[
+                    ft.Card(
+                        ft.Column([
+                            ft.Row([ft.Text('Choice', width=80), self.deploy_choice_dropdown, self.deploy_add_choice_button,self.deploy_save_choice_button,
+                                    self.deploy_remove_choice_button, ft.Text('', width=10)]),
+
             ft.ExpansionTile(
                 title=ft.Text("Project Settings"),
                 # subtitle=ft.Text("Deploy settings"),
@@ -117,7 +139,7 @@ class FAHAI:
                 controls=[
                     ft.Card(
                         ft.Column([
-                            ft.Row([ft.Text('CAM', width=80), self.deploy_camera_dropdown, ft.Text('', width=10)]),
+                            ft.Row([ft.Text('CAM', width=80),self.deploy_input_CAM_type, self.deploy_camera_dropdown, ft.Text('', width=10)]),
                             ft.Row([ft.Text('imgsz', width=80), self.deploy_frame_width_input,
                                     ft.Text('X'), self.deploy_frame_height_input, ft.Text('', width=10)]),
                             ft.Row([ft.Text('Confidence', width=80), self.deploy_settings_conf, ft.Text('', width=10)]),
@@ -150,30 +172,52 @@ class FAHAI:
                     )
                 ]
             ),
+                        ])
+                    )
+                ]
+            ),
         ],spacing=0)
 
 
         self.t = ft.Tabs(selected_index=0, animation_duration=300, tabs=[
             ft.Tab(text="deploy", icon=ft.icons.FACT_CHECK, content=self.deploy_page),
             ft.Tab(text='Settings', icon=ft.icons.SETTINGS, content=self.settings_page)
-        ], expand=1, on_change=self.save_settings)
+        ], expand=1)
 
         self.setup_page()
 
     def remove_choice(self, e):
-            # 删除选中的choice
-            # self.deploy_choice_dropdown.options.remove(ft.dropdown.Option(self.deploy_choice_dropdown.value))
-            # self.deploy_choice_dropdown.update()
-            # self.snack_message('Remove choice success', 'green')
-        self.snack_message('Remove choice is not supported', 'red')
+        # 删除选中的choice
+        if self.deploy_choice_dropdown.value:
+            try:
+                with open(self.SETTINGS_FILE, 'r') as f:
+                    settings = json.load(f)
+                    settings.pop(self.deploy_choice_dropdown.value)
+                with open(self.SETTINGS_FILE, 'w') as f:
+                    json.dump(settings, f)
+                self.deploy_choice_dropdown.options.clear()
+                self.deploy_choice_dropdown.options = [ft.dropdown.Option(choice) for choice in settings.keys()]
+                self.deploy_choice_dropdown.value = list(settings.keys())[0]
+                self.deploy_choice_dropdown.update()
+                self.load_settings()
+                self.snack_message(f'Remove choice {self.deploy_choice_dropdown.value} success', 'green')
+            except Exception as e:
+                self.snack_message(f"Error remove choice: {e}", 'red')
+        else:
+            self.snack_message('Please select a choice', 'red')
     def add_choice(self, e):
         def on_dialog_submit(d):
             new_choice = d.content.value
+            print(self.deploy_choice_dropdown.options)
             if new_choice:
+                # check if choice already exists
+                if new_choice in [option.key for option in self.deploy_choice_dropdown.options]:
+                    self.snack_message(f'Choice {new_choice} already exists', 'red')
+                    return
                 self.deploy_choice_dropdown.options.append(ft.dropdown.Option(new_choice))
-                print(self.deploy_choice_dropdown.options)
+                self.deploy_choice_dropdown.value = new_choice
                 self.deploy_choice_dropdown.update()
-
+                self.save_settings()
             d.open = False
             d.update()
             self.snack_message(f'Add choice{new_choice} success', 'green')
@@ -193,25 +237,48 @@ class FAHAI:
         dialog.open = True
         self.page.update()
     def save_settings(self, e=None):
-        settings = {
-            'selected_project': self.selected_project,
-            'model_path': self.model_path,
-            'deploy_settings_history': self.deploy_settings_history.value,
-            'deploy_settings_camera': self.deploy_camera_dropdown.value,
-            'deploy_settings_weight': self.deploy_settings_weight.value,
-            'deploy_settings_conf': self.deploy_settings_conf.value,
-            'deploy_settings_iou': self.deploy_settings_iou.value,
-            'deploy_frame_width': self.deploy_frame_width_input.value,
-            'deploy_frame_height': self.deploy_frame_height_input.value,
-            'theme_mode': self.page.theme_mode.name
-        }
-        with open(self.SETTINGS_FILE, 'w') as f:
-            json.dump(settings, f)
+        try:
+            settings = {}
+            if os.path.exists(self.SETTINGS_FILE):
+                with open(self.SETTINGS_FILE, 'r') as f:
+                    settings = json.load(f)
 
+            settings[self.deploy_choice_dropdown.value] = {
+                'selected_project': self.selected_project,
+                'model_path': self.model_path,
+                'deploy_settings_history': self.deploy_settings_history.value,
+                'deploy_settings_cam_type': self.deploy_input_CAM_type.value,
+                'deploy_settings_camera': self.deploy_camera_dropdown.value,
+                'deploy_settings_weight': self.deploy_settings_weight.value,
+                'deploy_settings_conf': self.deploy_settings_conf.value,
+                'deploy_settings_iou': self.deploy_settings_iou.value,
+                'deploy_frame_width': self.deploy_frame_width_input.value,
+                'deploy_frame_height': self.deploy_frame_height_input.value,
+                'theme_mode': self.page.theme_mode.name
+            }
+            with open(self.SETTINGS_FILE, 'w') as f:
+                json.dump(settings, f)
+            self.snack_message('Save settings success', 'green')
+        except Exception as e:
+            self.snack_message(f"Error saving settings: {e}", 'red')
     def load_settings(self,e=None):
         try:
             with open(self.SETTINGS_FILE, 'r') as f:
                 settings = json.load(f)
+                if self.deploy_choice_dropdown.value is None:
+                    self.deploy_choice_dropdown.options.clear()
+                    self.deploy_choice_dropdown.options = [ft.dropdown.Option(choice) for choice in settings.keys()]
+                    try:
+                        self.deploy_choice_dropdown.value = list(settings.keys())[0]
+                    except:
+                        self.snack_message('No choice found', 'red')
+                        return
+                    self.deploy_choice_dropdown.update()
+                else:
+                    pass
+                self.deploy_choice_text.value=self.deploy_choice_dropdown.value
+                self.deploy_choice_text.update()
+                settings = settings.get(self.deploy_choice_dropdown.value)
                 self.selected_project = settings.get('selected_project')
                 self.deploy_project_dropdown.value = self.selected_project
                 self.model_path = settings.get('model_path')
@@ -219,6 +286,7 @@ class FAHAI:
                 self.find_train_history(self.selected_project)
                 self.deploy_settings_history.value = settings.get('deploy_settings_history')
                 self.deploy_camera_dropdown.value = settings.get('deploy_settings_camera', '0')
+                self.deploy_input_CAM_type.value=settings.get('deploy_settings_cam_type','CV CAM')
 
                 self.deploy_settings_weight.options.clear()
                 self.find_weights(None)
@@ -236,6 +304,7 @@ class FAHAI:
                 self.deploy_model_path.value = self.model_path
                 self.deploy_model_path.update()
                 self.theme_switch.update()
+                self.deploy_input_CAM_type.update()
                 self.page.update()
         except FileNotFoundError:
             self.snack_message('No settings file found', 'red')
@@ -269,7 +338,6 @@ class FAHAI:
                                        self.deploy_settings_history.value, 'weights', self.deploy_settings_weight.value)
         self.deploy_model_path.value = self.model_path
         self.deploy_model_path.update()
-        self.save_settings()
 
     def start_deploy_camera(self, e):
         self.deploy_progress_bar.visible = True
@@ -334,7 +402,6 @@ class FAHAI:
     def find_weights(self, e):
         project = self.selected_project
         train_name = self.deploy_settings_history.value
-        self.save_settings()
         if project is None or train_name is None:
             return
         try:
@@ -420,7 +487,6 @@ class FAHAI:
         self.selected_project = self.deploy_project_dropdown.value
         self.find_train_history(self.selected_project)
         self.page.update()
-        self.save_settings()
 
     def open_project_folder(self, e):
         project = self.selected_project
