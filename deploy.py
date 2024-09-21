@@ -543,7 +543,7 @@ class FAHAI:
             GPIO.setup(self.RelayA[1], GPIO.OUT, initial=GPIO.LOW)
             GPIO.setup(self.RelayA[2], GPIO.OUT, initial=GPIO.LOW)
             self.snack_message(
-                f"GPIO initialized, RelayA: {RelayA[0]}, {RelayA[1]}, {RelayA[2]}", 'green'
+                f"GPIO initialized, RelayA: {self.RelayA[0]}, {self.RelayA[1]}, {self.RelayA[2]}", 'green'
             )
         except Exception as e:
             self.deploy_output_GPIO.value = "None"
