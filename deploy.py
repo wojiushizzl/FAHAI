@@ -480,7 +480,10 @@ class FAHAI:
             self.deploy_progress_bar.visible = False
             self.deploy_progress_bar.update()
             self.deploy_img_element.src_base64 = ""
-            self.initialize_gpio()
+            try:
+                self.initialize_gpio()
+            except:
+                pass
 
             self.page.update()
 
@@ -556,8 +559,13 @@ class FAHAI:
             self.deploy_progress_bar.visible = True
             self.deploy_progress_bar.update()
             self.page.update()
-            from ultralytics import YOLO
-            model = self.load_model(YOLO, model_path)
+            try:
+                from ultralytics import YOLO
+                model = self.load_model(YOLO, model_path)
+            except Exception as e:
+                self.snack_message(f"Error starting train: {e}", 'red')
+                self.stop_deploy_camera()
+                return
             self.deploy_progress_bar.visible = False
             self.deploy_progress_bar.update()
             self.page.update()
@@ -590,6 +598,7 @@ class FAHAI:
             self.snack_message('select CAM type first ', 'red')
             self.stop_deploy_camera()
 
+        frame_counter = 0
         while getattr(threading.currentThread(), "do_run", True):
             if self.deploy_input_CAM_type.value == "hikrobotic CAM":
                 ret, frame = get_frame(self.cap, self.stOutFrame)
@@ -600,15 +609,21 @@ class FAHAI:
             iou = float(self.deploy_settings_iou.value)
             width = int(self.deploy_frame_width_input.value)
             height = int(self.deploy_frame_height_input.value)
+            logic_result=False
+            # 每10帧检测一次
             try:
-                res = model.predict(frame, conf=conf, iou=iou, imgsz=(width, height))
+                if frame_counter % 10 == 0:
+                    res = model.predict(frame, conf=conf, iou=iou, imgsz=(width, height))
 
-                res_plotted = res[0].plot()
-                res_json = res[0].tojson()
-                logic_result = self.logic_check(res_json)
+                    res_plotted = res[0].plot()
+                    res_json = res[0].tojson()
+                    logic_result = self.logic_check(res_json)
 
-                markdown_text = f"```dart\n{res_json}\n```"
-                self.deploy_results.value = markdown_text
+                    markdown_text = f"```dart\n{res_json}\n```"
+                    self.deploy_results.value = markdown_text
+                else:
+                    res_plotted = frame
+                frame_counter += 1
             except:
                 res_plotted = frame
             if self.deploy_output_type.value == "Visualize":
