@@ -8,4 +8,8 @@ ruamel.yaml==0.18.6
 # if you run in unbuntu 20.04 or above, you need to install libmpv-dev and libmpv1
 # sudo sudo apt update
 # sudo apt install libmpv-dev libmpv1
-#test
+
+# if you run in Jetson & 3-CH_Relay, refer to this link
+# https://www.waveshare.net/wiki/3-CH_Relay_for_Jetson_Nano
+# Jetson.GPIO==2.1.6
+# bottle==0.13.1

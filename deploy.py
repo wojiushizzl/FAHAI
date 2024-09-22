@@ -35,8 +35,8 @@ class FAHAI:
         self.selected_classes = []
         self.project_list = function.get_project_list()
         self.RelayA = [21, 20, 26]
-
         self.setup_ui()
+        self.initialize_gpio()
         self.load_settings()
 
     def setup_ui(self):
@@ -480,6 +480,8 @@ class FAHAI:
             self.deploy_progress_bar.visible = False
             self.deploy_progress_bar.update()
             self.deploy_img_element.src_base64 = ""
+            self.initialize_gpio()
+
             self.page.update()
 
     def upload_img_predict(self, e: ft.FilePickerResultEvent):
