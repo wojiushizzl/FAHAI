@@ -1,7 +1,8 @@
 import flet as ft
 import Jetson.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
-GPIO.setwarnings(False)
+# GPIO.setwarnings(False)
+
 RelayA = [21, 20, 26]
 
 GPIO.setup(RelayA[0], GPIO.OUT, initial=GPIO.HIGH)
