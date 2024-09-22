@@ -1,13 +1,16 @@
+
+
 import flet as ft
 import Jetson.GPIO as GPIO
 GPIO.setmode(GPIO.BCM)
 # GPIO.setwarnings(False)
 
 RelayA = [21, 20, 26]
+# GPIO.setup(RelayA, GPIO.OUT, initial=GPIO.LOW)
 
-GPIO.setup(RelayA[0], GPIO.OUT, initial=GPIO.HIGH)
-GPIO.setup(RelayA[1], GPIO.OUT, initial=GPIO.HIGH)
-GPIO.setup(RelayA[2], GPIO.OUT, initial=GPIO.HIGH)
+GPIO.setup(RelayA[0], GPIO.OUT, initial=GPIO.LOW)
+GPIO.setup(RelayA[1], GPIO.OUT, initial=GPIO.LOW)
+GPIO.setup(RelayA[2], GPIO.OUT, initial=GPIO.LOW)
 
 
 def main(page):
@@ -16,11 +19,14 @@ def main(page):
         page.update()
         if cg.value=='red':
             print(cg.value)
+            # GPIO.output(RelayA, GPIO.HIGH)
+            #
             GPIO.output(RelayA[0], GPIO.HIGH)
             GPIO.output(RelayA[1], GPIO.LOW)
             GPIO.output(RelayA[2], GPIO.LOW)
         elif cg.value=='green':
             print(cg.value)
+            # GPIO.output(RelayA, GPIO.LOW)
 
             GPIO.output(RelayA[0], GPIO.LOW)
             GPIO.output(RelayA[1], GPIO.HIGH)
