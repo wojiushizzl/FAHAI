@@ -480,11 +480,7 @@ class FAHAI:
             self.deploy_progress_bar.visible = False
             self.deploy_progress_bar.update()
             self.deploy_img_element.src_base64 = ""
-            try:
-                self.initialize_gpio()
-            except:
-                pass
-
+            self.initialize_gpio()
             self.page.update()
 
     def upload_img_predict(self, e: ft.FilePickerResultEvent):
@@ -608,10 +604,10 @@ class FAHAI:
             iou = float(self.deploy_settings_iou.value)
             width = int(self.deploy_frame_width_input.value)
             height = int(self.deploy_frame_height_input.value)
-            logic_result=False
+            # logic_result=False
             # 每10帧检测一次
             try:
-                if frame_counter % 10 == 0:
+                if frame_counter % 1 == 0:
                     res = model.predict(frame, conf=conf, iou=iou, imgsz=(width, height))
 
                     res_plotted = res[0].plot()
