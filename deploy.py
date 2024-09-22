@@ -543,9 +543,8 @@ class FAHAI:
         try:
             GPIO.setmode(GPIO.BCM)
             GPIO.setwarnings(False)
-            GPIO.setup(self.RelayA[0], GPIO.OUT, initial=GPIO.LOW)
-            GPIO.setup(self.RelayA[1], GPIO.OUT, initial=GPIO.LOW)
-            GPIO.setup(self.RelayA[2], GPIO.OUT, initial=GPIO.LOW)
+            GPIO.setup(self.RelayA, GPIO.OUT, initial=GPIO.LOW)
+
             self.snack_message(
                 f"GPIO initialized, RelayA: {self.RelayA[0]}, {self.RelayA[1]}, {self.RelayA[2]}", 'green'
             )
@@ -635,9 +634,9 @@ class FAHAI:
                                              (0, 0, 255), 2, cv2.LINE_AA)
             if self.deploy_output_GPIO.value == "GPIO_21":
                 if logic_result:
-                    GPIO.output(self.RelayA[0], GPIO.HIGH)
+                    GPIO.output(self.RelayA, GPIO.HIGH)
                 else:
-                    GPIO.output(self.RelayA[0], GPIO.LOW)
+                    GPIO.output(self.RelayA, GPIO.LOW)
 
             img_pil = Image.fromarray(res_plotted)
             img_byte_arr = BytesIO()
